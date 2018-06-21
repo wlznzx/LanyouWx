@@ -1,0 +1,33 @@
+<CompositeView width="{dp(360)}" height="{dp(640)}" layout="{layout.container}" background="#FF66FF">
+
+    <CompositeView id="MainLayout" width="{dp(320)}" height="{dp(600)}" layout="{layout.column}">
+
+        <TextView
+                id="textView"
+                text=""
+                fontSize="12sp"
+                height="{dp(40)}"
+                align="{enum.TextView.Align.Center}"
+                verticalAlign="{enum.TextView.VerticalAlign.Middle}"
+                color="#ffffff"
+                />
+
+        <ImageView
+                id="QRCodeIv"
+                width="{dp(320)}"
+                height="{dp(320)}"
+                align="{enum.TextView.Align.Center}"
+                />
+
+        <TextView
+                id="TipsTV"
+                text="请扫码登录."
+                align="{enum.TextView.Align.Center}"
+                fontSize="12sp"
+                height="{dp(40)}"
+                color="#ffffff"
+                />
+
+    </CompositeView>
+
+</CompositeView>

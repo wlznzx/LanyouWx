@@ -1,0 +1,22 @@
+{
+    "container": {
+        "type": "RelativeLayout",
+        "params": {
+            "0": {
+                "align": {
+                    "center": "parent",
+                    "middle": "parent"
+                }
+            }
+        }
+    },
+    "column": {
+        "type": "ColumnLayout",
+        "default": {
+            "align": "{enum.ColumnLayout.Align.Center}"
+        },
+        "attrs": {
+            "spacing": "{dp(20)}"
+        }
+    }
+}

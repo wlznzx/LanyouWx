@@ -1,0 +1,27 @@
+{
+    "domain": {
+        "name": "LanyouWx.yunos.com",
+        "use_sdk": 1,
+        "version_code": 1,
+        "version": "1",
+        "default_locale": "zh-CN",
+        "permission": {
+            "use_permission": [
+                "ACCESS_ALL_DOWNLOADS.permission.yunos.com",
+                "ACCESS_DOWNLOAD_MANAGER.permission.yunos.com",
+                "WRITE_EXTERNAL_STORAGE.permission.yunos.com",
+                "NETWORK.permission.yunos.com",
+                "WIFI.permission.yunos.com",
+                "MOBILE.permission.yunos.com"
+            ]
+        }
+    },
+    "pages": [
+        {
+            "uri": "page://LanyouWx.yunos.com/Main",
+            "content_path": "src/Main.js",
+            "main": true,
+            "icon": "res/default/images/icon.png"
+        }
+    ]
+}
