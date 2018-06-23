@@ -20,6 +20,12 @@
         {
             "uri": "page://LanyouWx.yunos.com/Main",
             "content_path": "src/Main.js",
+            "main": false,
+            "icon": "res/default/images/icon.png"
+        },
+        {
+            "uri": "page://LanyouWx.yunos.com/ChatPage",
+            "content_path": "src/ChatPage.js",
             "main": true,
             "icon": "res/default/images/icon.png"
         }

@@ -24,8 +24,8 @@ let URLS = getUrls({});
 
 // const cookiePath = path.join('/tmp', '.cookie.json');
 // const secretPath = path.join('/tmp', '.secret.json');
-const cookiePath = "/opt/data/share/PhoneDemo.yunos.com/cookie.json";
-const secretPath = '/opt/data/share/PhoneDemo.yunos.com/secret.json';
+const cookiePath = "/opt/data/share/LanyouWx.yunos.com/cookie.json";
+const secretPath = '/opt/data/share/LanyouWx.yunos.com/secret.json';
 // touch.sync(cookiePath);
 // const jar = new tough.CookieJar(new FileCookieStore(cookiePath));
 const jar = new tough.CookieJar();
@@ -48,6 +48,12 @@ const makeDeviceID = () => 'e' + Math.random().toFixed(15).toString().substring(
 class WxModule extends EventEmitter{
 
 
+    static getInstance() {
+        if (!WxModule.instance) {
+                WxModule.instance = new WxModule();
+            }
+            return WxModule.instance;
+        }
   constructor(options = {}) {
     super();
     // this.mWxDao = new WxDao();
@@ -125,8 +131,6 @@ class WxModule extends EventEmitter{
   		// 判断uuid是字符串;
   		const qrcodeUrl = URLS.QRCODE_PATH + this.uuid;
         this.emit("qrcode", qrcodeUrl);
-        log.I("wltest","qrcodeUrl = " + qrcodeUrl);
-        log.I("wltest","qrcodeUrl.re = " + qrcodeUrl.replace('/qrcode/', '/l/'));
   		qrcode.generate(qrcodeUrl.replace('/qrcode/', '/l/') , function(qrcode){
   			// log.I("wltest",qrcode);
   		});
@@ -201,10 +205,12 @@ class WxModule extends EventEmitter{
 	        this.redirectUri = data.match(/redirect_uri="(.+)";$/)[1] + '&fun=new';
 	        this.baseHost = url.parse(this.redirectUri).host;
 	        URLS = getUrls({ baseHost: this.baseHost });
+            this.emit("logged", "");
 	        break;
 
 	      case 201:
 	        log.I("wltest",'二维码已被扫描，请确认登录!');
+            this.emit("scaned", "");
 	        break;
 
 	      case 408:
