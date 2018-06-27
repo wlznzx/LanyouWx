@@ -14,7 +14,7 @@ const Color = require("yunos/graphics/Color");
 const Contact = require("./WebWxModule/Contact");
 const ChatAdapter = require("./adapter/ChatAdapter");
 const ContactAdapter = require("./adapter/ContactAdapter");
-
+const RequireRouter = require("./RequireRouter");
 
 
 
@@ -29,12 +29,12 @@ class ChatPage extends Page {
     onLink(link) {
         // console.log("Page->onLink", link);
         log.I(TAG, link.data);
-        this.mWxModule = link.data;
         this.initDatas();
     }
 
     initView() {
         // this.mWxModule = require("./WebWxModule/wx_module").getInstance();
+        this.mWxModule = RequireRouter.getRequire("./WebWxModule/wx_module").getInstance();
         let width = this.window.width;
         let height = this.window.height;
 
@@ -108,8 +108,8 @@ class ChatPage extends Page {
         chatAdapter.data = data2;
         this.mChatLV.adapter = chatAdapter;
 
-        let isReady = this.mWxModule.isLooped();
-        log.I(TAG , "mWxModule.isReady() = " + isReady);
+        let isLooped = this.mWxModule.isLooped();
+        log.I(TAG , "mWxModule.isLooped() = " + isLooped);
         // if (isReady) {
         //     mWxModule.getRecentContacts().then((result) => {
         //         log.I(TAG , result);

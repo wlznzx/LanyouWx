@@ -45,8 +45,8 @@ Promise.promisifyAll(Datastore.prototype);
 
 const makeDeviceID = () => 'e' + Math.random().toFixed(15).toString().substring(2, 17);
 
-
 var _loaderInstance;
+
 class WxModule extends EventEmitter{
 
     static getInstance() {
@@ -56,7 +56,7 @@ class WxModule extends EventEmitter{
         }
         return _loaderInstance;
     }
-    
+
   constructor(options = {}) {
     super();
     // this.mWxDao = new WxDao();
