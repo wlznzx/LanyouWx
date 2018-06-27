@@ -3,16 +3,15 @@
 
 process.env.CAFUI2 = true;
 
-const mWxModule = require("./WebWxModule/wx_module").getInstance();
-// let mWxModule = new WxModule();
+// const mWxModule = require("./WebWxModule/wx_module").getInstance();
 var Page = require("yunos/page/Page");
 const ImageView = require("yunos/ui/view/ImageView");
 const View = require("yunos/ui/view/View");
 const LayoutManager = require("yunos/ui/markup/LayoutManager");
 var imageLoader = require("yunos/util/ImageLoader").getInstance();
 const PageLink = require("yunos/page/PageLink");
-
-const TAG = "wltest";
+// const Contact = require("./Contact");
+const TAG = "WebWx_Main";
 
 class Main extends Page {
 
@@ -33,8 +32,7 @@ class Main extends Page {
         textView.verticalAlign = TextView.VerticalAlign.Middle;
         this.window.addChild(textView);
         */
-        log.I(TAG , "width" + this.window.width);
-        log.I(TAG , "height" + this.window.height);
+        this.mWxModule = require("./WebWxModule/wx_module").getInstance();
         LayoutManager.load("main", (err, rootView)=> {
             // if (err) throw err;
             rootView.width = this.window.width;
@@ -51,35 +49,38 @@ class Main extends Page {
             //     log.D(TAG, "tap", putBtn.text);
             // });
         });
-        log.I("wltest", "My App Start");
-
         this.initCallBack();
     }
 
     initCallBack() {
-        mWxModule.on("friend" , (msg) => {
+        this.mWxModule.on("friend" , (msg) => {
             if (msg !== null) {
-                log.I("wltest", msg);
+                // log.I("wltest", msg);
             }
         });
-        mWxModule.on("group" , (msg) => {
-            log.I("wltest", msg);
+        this.mWxModule.on("group" , (msg) => {
+            // log.I("wltest", msg);
         });
-        mWxModule.on("qrcode", (url) => {
-            log.I("wltest", "v = " + url);
+        this.mWxModule.on("qrcode", (url) => {
             imageLoader.displayImage(this.QRCodeIV, url);
         });
-        mWxModule.on("logged", () => {
-            this.QRCodeIV.visibility = View.Visibility.Hidden;
+        this.mWxModule.on("logged", () => {
+            // this.QRCodeIV.visibility = View.Visibility.Hidden;
             this.TipsTV.text = "已登录!";
-
             let link = new PageLink("page://LanyouWx.yunos.com/ChatPage");
+            // link.data = this.mWxModule;
             Page.getInstance().sendLink(link);
         });
-        mWxModule.on("scaned", () => {
+        this.mWxModule.on("scaned", () => {
             this.TipsTV.text = "二维码已被扫描，请确认登录!";
         });
-        mWxModule.doRun();
+
+        // mWxModule.on("ready", () => {
+        //     mWxModule.getHeadimg("hello" , (path) => {
+        //         imageLoader.displayImage(this.QRCodeIV, path);
+        //     });
+        // });
+        this.mWxModule.doRun();
     }
 }
 module.exports = Main;

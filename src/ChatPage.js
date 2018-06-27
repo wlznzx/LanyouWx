@@ -11,15 +11,30 @@ const screen = require("yunos/device/Screen").getInstance();
 const RelativeLayout = require("yunos/ui/layout/RelativeLayout");
 const TextView = require("yunos/ui/view/TextView");
 const Color = require("yunos/graphics/Color");
+const Contact = require("./WebWxModule/Contact");
+const ChatAdapter = require("./adapter/ChatAdapter");
+const ContactAdapter = require("./adapter/ContactAdapter");
+
+
+
+
+const TAG = "WebWx_ChatPage";
 
 class ChatPage extends Page {
 
     onStart() {
         this.initView();
+    }
+
+    onLink(link) {
+        // console.log("Page->onLink", link);
+        log.I(TAG, link.data);
+        this.mWxModule = link.data;
         this.initDatas();
     }
 
     initView() {
+        // this.mWxModule = require("./WebWxModule/wx_module").getInstance();
         let width = this.window.width;
         let height = this.window.height;
 
@@ -76,12 +91,13 @@ class ChatPage extends Page {
     }
 
     initDatas() {
-        var data = [];
+        let Data = new Array();
         for (let i = 0; i < 10; i++) {
-            data[i] = "I am " + i;
+            let contact = new Contact("@3535345345", "鹏飞");
+            Data.push(contact);
         }
-        var adapter = new MyAdapter();
-        adapter.data = data;
+        var adapter = new ContactAdapter();
+        adapter.data = Data;
         this.mContactLV.adapter = adapter;
 
         var data2 = [];
@@ -91,78 +107,25 @@ class ChatPage extends Page {
         var chatAdapter = new ChatAdapter();
         chatAdapter.data = data2;
         this.mChatLV.adapter = chatAdapter;
+
+        let isReady = this.mWxModule.isLooped();
+        log.I(TAG , "mWxModule.isReady() = " + isReady);
+        // if (isReady) {
+        //     mWxModule.getRecentContacts().then((result) => {
+        //         log.I(TAG , result);
+        //     });
+        // } else {
+            this.mWxModule.on("looped", () => {
+                log.I(TAG , "on looped.");
+
+            });
+        // }
+        // this.mWxModule.getRecentContacts().then((result) => {
+        //     log.I(TAG , result);
+        // });
+
     }
 }
 
 // var self = this;
-class MyAdapter extends BaseAdapter {
-    createItem(position, convertView) {
-        if (!convertView) {
-            convertView = new ListView.ListItem();
-            convertView.type = ListView.ListItem.Type.DEFAULT;
-            convertView.icon = resource.getImageSrc("images/icons/pf.jpg");
-            convertView.title = "〆木雨";
-            convertView.detail = "青春洋溢的少年.";
-        }
-
-        // if (isLastItem) {
-        //     item.showShadow = true;
-        // } else {
-        //     item.showShadow = false;
-        // }
-        return convertView;
-    }
-}
-
-class ChatAdapter extends BaseAdapter {
-    createItem(position, convertView) {
-        log.I("wltest", "ChatAdapter position = " + position);
-        if (!convertView) {
-            convertView = this.buildMsgLayout(position);
-        }
-        return convertView;
-    }
-
-    buildMsgLayout(position) {
-        let ret = new CompositeView();
-        let layout = new RelativeLayout();
-        ret.layout = layout;
-        var iv = new ImageView();
-        var ivSize = 40;
-        iv.scaleType = ImageView.ScaleType.Fitcenter;
-        iv.id = "avatar";
-        iv.width = ivSize - 5;
-        iv.height = ivSize - 5;
-        iv.src = resource.getImageSrc("images/icons/pf.jpg");
-
-        ret.addChild(iv);
-        let tv = new TextView();
-        iv.id = "content";
-        tv.fontSize = "14sp";
-        tv.text = "Hello , 你好.";
-        ret.addChild(tv);
-        if (position === 3) {
-            layout.setLayoutParam(0, "align", {right: "parent", top: "parent",middle: "parent"});
-            layout.setLayoutParam(1, "align", {right: {target: 0, side: "left"},middle: "parent"});
-            layout.setLayoutParam(0, "margin", {right: screen.getPixelByDp(30)});
-            layout.setLayoutParam(1, "margin", {right: screen.getPixelByDp(15)});
-            tv.text = "你好，我叫鹏飞。";
-        } else {
-            layout.setLayoutParam(0, "align", {left: "parent", top: "parent",middle: "parent"});
-            layout.setLayoutParam(1, "align", {left: {target: 0, side: "right"},middle: "parent"});
-            layout.setLayoutParam(0, "margin", {left: screen.getPixelByDp(30)});
-            layout.setLayoutParam(1, "margin", {left: screen.getPixelByDp(15)});
-        }
-        ret.height = 60;
-        ret.width = 200;
-        // container.layout = ret;
-        // var contentH = textZone.layout._contentHeight + 2 * this._style.paddingTop;
-        // container.height = this.realHeight(this._style.defaultHeight, contentH);
-        // this._icon = iv;
-        // container.addChild(iv);
-        // this.createItem(container, false);
-        return ret;
-    }
-}
-
 module.exports = ChatPage;

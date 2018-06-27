@@ -15,7 +15,7 @@ const EventEmitter = require('events');
 const Datastore = require('nedb');
 const Promise = require('bluebird');
 const getDao = require('./wx_dao');
-
+const Contact = require("./Contact");
 const {
   getUrls, CODES, SP_ACCOUNTS, PUSH_HOST_LIST,
 } = require('./conf');
@@ -45,15 +45,18 @@ Promise.promisifyAll(Datastore.prototype);
 
 const makeDeviceID = () => 'e' + Math.random().toFixed(15).toString().substring(2, 17);
 
+
+var _loaderInstance;
 class WxModule extends EventEmitter{
 
-
     static getInstance() {
-        if (!WxModule.instance) {
-                WxModule.instance = new WxModule();
-            }
-            return WxModule.instance;
+        if (!_loaderInstance) {
+            log.I("wltest",'new this');
+            _loaderInstance = new this();
         }
+        return _loaderInstance;
+    }
+    
   constructor(options = {}) {
     super();
     // this.mWxDao = new WxDao();
@@ -75,6 +78,7 @@ class WxModule extends EventEmitter{
 	    this.syncKey = null;
 	    this.formateSyncKey = '';
 	    this.deviceid = makeDeviceID();
+        this.isReady = "false";
 
 	    clearTimeout(this.checkSyncTimer);
 	    clearInterval(this.updataContactTimer);
@@ -306,6 +310,7 @@ class WxModule extends EventEmitter{
 
       this.my = data.User;
       this.syncKey = data.SyncKey;
+      this.chatSet = data.ChatSet;
       this.formateSyncKey = this.syncKey.List.map((item) => item.Key + '_' + item.Val).join('|');
     }
 
@@ -621,7 +626,7 @@ class WxModule extends EventEmitter{
       }
       member = await this.mWxDao.getGroupMember(id);
       return member;
-    }
+  }
 
   	/*
   	async run() {
@@ -707,20 +712,6 @@ class WxModule extends EventEmitter{
       // const qrcodeUrl = URLS.QRCODE_PATH + this.uuid;
       // this.emit('qrcode', qrcodeUrl);
 
-      // if (this.receiver) {
-      //   log.I("wltest",`发送二维码图片到邮箱 ${this.receiver}`);
-      //   this.transporter.sendMail({
-      //     from: `WeixinBot <${this.transporter.transporter.options.auth.user}>`,
-      //     to: this.receiver,
-      //     subject: 'WeixinBot 请求登录',
-      //     html: `<img src="${qrcodeUrl}" height="256" width="256" />`,
-      //   }, (e) => {
-      //     if (e) log.I("wltest",`发送二维码图片到邮箱 ${this.receiver} 失败`, e);
-      //   });
-      // } else {
-      //   qrcode.generate(qrcodeUrl.replace('/qrcode/', '/l/'));
-      // }
-
       // limit check times
       this.checkTimes = 0;
       while (true) {
@@ -780,8 +771,10 @@ class WxModule extends EventEmitter{
 
 
       log.I("wltest",'循环读取信息......');
-      this.syncCheck();
 
+      this.syncCheck();
+      this.isReady = true;
+      this.emit("looped", "");
       // auto update Contacts every ten minute
       // this.updataContactTimer = setInterval(() => {
       //   this.updateContact();
@@ -820,6 +813,79 @@ class WxModule extends EventEmitter{
         this.sendText(to, content, callback);
         return;
       });
+    }
+
+    getHeadimg(name, callback){
+        req.request({
+        // url: URLS.API_webwxgeticon,
+        url: URLS.API_webwxgeticon,
+        method: 'get',
+        responseType: 'arraybuffer',
+        headers: {
+          'Accept':'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+          'Accept-Encoding': 'gzip, deflate, br',
+          'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_2) ' +
+              'AppleWebKit/537.36 (KHTML, like Gecko) Chrome/50.0.2652.0 Safari/537.36',
+        },
+        params: {
+            seq: +new Date,
+            username: this.my.UserName,
+            skey: this.skey,
+        }
+        }).then((result) => {
+          const { data } = result;
+          callback = callback || (() => (null));
+          let path = "/opt/data/share/LanyouWx.yunos.com/" + "_" + name + ".jpg";
+          fs.writeFile(path, data,"binary", function(err) {
+            if(err){
+              callback(null);
+            }else{
+              callback(path);
+            }
+          });
+        }).catch((e) => {
+          return;
+        });
+    }
+
+    isLooped() {
+        return this.isReady;
+    }
+
+    async getRecentContacts() {
+        let _chatArr = this.chatSet.trim().split(",");
+        function startsWith(searchString, starts) {
+            return searchString.indexOf(starts, 0) === 0;
+        }
+        log.I("wltest","getRecentContacts _chatArr.length = " + _chatArr.length);
+        var i = _chatArr.length;
+        while(i--){
+          if(!startsWith(_chatArr[i].toString(),"@")){
+            _chatArr.splice(i,1);
+          }
+        }
+        let contacts = new Array();
+        for (var i = 0; i < _chatArr.length; i++){
+
+            let member = null;
+            if(startsWith(_chatArr[i],"@@")){
+              member = await this.getGroup(_chatArr[i]);
+            }else{
+              member = await this.getMember(_chatArr[i]);
+            }
+            // 1.好友 2.群组 3.公众号
+            if(member != null){
+                let contact = new Contact();
+                contact.setUserName(member.UserName);
+                if(member.RemarkName !== ''){
+                  contact.setName(member.RemarkName);
+                }else{
+                  contact.setName(member.NickName);
+                }
+                contacts.push(contact);
+            }
+        }
+        return contacts;
     }
 }
 
