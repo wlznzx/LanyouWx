@@ -308,6 +308,9 @@ class WxModule extends EventEmitter{
         throw new Error('Init Webwx failed');
       }
 
+      log.I("wltest","-------webwxinit-------");
+      log.I("wltest",data.StatusNotifyUserName);
+
       this.my = data.User;
       this.syncKey = data.SyncKey;
       this.chatSet = data.ChatSet;
@@ -341,6 +344,8 @@ class WxModule extends EventEmitter{
       }
 
       const { data } = result;
+      log.I("wltest","-------notifyMobile-------");
+      log.I("wltest",data);
 
       if (!data || !data.BaseResponse || data.BaseResponse.Ret !== 0) {
         throw new Error('通知客户端失败');
@@ -512,7 +517,6 @@ class WxModule extends EventEmitter{
       }
 
       const { data } = result;
-
       this.syncKey = data.SyncKey;
       this.formateSyncKey = this.syncKey.List.map((item) => item.Key + '_' + item.Val).join('|');
       data.AddMsgList.forEach((msg) => this.handleMsg(msg));
@@ -528,9 +532,15 @@ class WxModule extends EventEmitter{
         //   来自群 ${msg.Group.NickName} 的消息
         //   ${msg.GroupMember.DisplayName || msg.GroupMember.NickName}: ${msg.Content}
         // `);
-
         this.emit('group', msg);
         return;
+      }
+
+      if(msg.StatusNotifyUserName && !this.isGetRecentContacts){
+          this.chatSet=msg.StatusNotifyUserName;
+          this.emit('u_contacts', "");
+          this.isGetRecentContacts = true;
+          console.log("this.chatSet:"+this.chatSet);
       }
 
       msg.Member = await this.getMember(msg.FromUserName);
@@ -818,7 +828,7 @@ class WxModule extends EventEmitter{
     getHeadimg(name, callback){
         req.request({
         // url: URLS.API_webwxgeticon,
-        url: URLS.API_webwxgeticon,
+        url: URLS.API_webwxgetheadimg,
         method: 'get',
         responseType: 'arraybuffer',
         headers: {
@@ -829,7 +839,7 @@ class WxModule extends EventEmitter{
         },
         params: {
             seq: +new Date,
-            username: this.my.UserName,
+            username: name,
             skey: this.skey,
         }
         }).then((result) => {
@@ -882,6 +892,8 @@ class WxModule extends EventEmitter{
                 }else{
                   contact.setName(member.NickName);
                 }
+                log.I("wltest","id:" + i);
+                log.I("wltest",contact);
                 contacts.push(contact);
             }
         }

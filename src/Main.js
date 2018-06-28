@@ -60,8 +60,6 @@ class Main extends Page {
             //     log.D(TAG, "tap", putBtn.text);
             // });
         });
-
-
         this.initCallBack();
     }
 
@@ -86,17 +84,22 @@ class Main extends Page {
             // Page.getInstance().sendLink(link);
             this.window.removeAllChildren();
             this.initView();
-            this.initDatas();
         });
         this.mWxModule.on("scaned", () => {
             this.TipsTV.text = "二维码已被扫描，请确认登录!";
         });
 
-        // mWxModule.on("ready", () => {
-        //     mWxModule.getHeadimg("hello" , (path) => {
-        //         imageLoader.displayImage(this.QRCodeIV, path);
-        //     });
-        // });
+        this.mWxModule.on("u_contacts", () => {
+            log.I(TAG , "on looped.");
+            log.D(TAG , "getRecentContacts..");
+            this.mWxModule.getRecentContacts().then((result) => {
+                // log.D(TAG , result);
+                this.mContactLV.ContactsList = result;
+                log.D(TAG, "position = " + result[1].Name);
+                // log.D(TAG, "position = " + this.ContactsList[1].Name);
+                this.initDatas(result);
+            });
+        });
         this.mWxModule.doRun();
     }
 
@@ -117,13 +120,15 @@ class Main extends Page {
         this.mContactLV.width = width / 3;
         this.mContactLV.height = height;
 
+        this.mContactLV.on("itemselect", this.onContactLvSelect);
+        this.mContactLV.page = this;
         // 右上侧对话框.
         this.mTitleView = new CompositeView();
         let titleLayout = new RelativeLayout();
         this.mTitleView.layout = titleLayout;
-        let contactNameTV = new TextView();
-        contactNameTV.fontSize = "18sp";
-        contactNameTV.text = "〆木雨";
+        this.contactNameTV = new TextView();
+        this.contactNameTV.fontSize = "18sp";
+        this.contactNameTV.text = "〆木雨";
         this.mTitleView.width = width - this.mContactLV.width;
         this.mTitleView.height = 60;
         let divider = new View(this._context);
@@ -132,7 +137,7 @@ class Main extends Page {
         divider.id = "divider";
         // divider.background = this._style.dividerColor;
         divider.background = "#003300";
-        this.mTitleView.addChild(contactNameTV);
+        this.mTitleView.addChild(this.contactNameTV);
         this.mTitleView.addChild(divider);
         titleLayout.setLayoutParam(0, "align", {left: "parent", middle: "parent"});
         titleLayout.setLayoutParam(0, "margin", {left: 60});
@@ -158,28 +163,38 @@ class Main extends Page {
         this.window.addChild(this.mMainView);
     }
 
-    initDatas() {
-        log.I(TAG , "mWxModule.isLooped() = " + this.mWxModule.isLooped());
-        let Data = new Array();
-        for (let i = 0; i < 10; i++) {
-            let contact = new Contact("@3535345345", "鹏飞");
-            Data.push(contact);
-        }
-        var adapter = new ContactAdapter();
-        adapter.data = Data;
-        this.mContactLV.adapter = adapter;
-        log.I(TAG , "mWxModule.isLooped() = " + this.mWxModule.isLooped());
-        
-        // var data2 = [];
+    onContactLvSelect(itemView, position) {
+        log.D(TAG, "position = " + position);
+        // log.D(TAG, "position = " + this.ContactsList[position].Name);
+        // log.D(TAG, itemView);
+        log.D(TAG, "onContactLvSelect =" + this.page);
+        this.page.contactNameTV.text = this.ContactsList[position].Name;
+        itemView.background = "#F2F2F2";
+    }
+
+
+
+    initDatas(contacts_data) {
+        // log.I(TAG , "mWxModule.isLooped() = " + this.mWxModule.isLooped());
+        // let Data = new Array();
         // for (let i = 0; i < 10; i++) {
-        //     data2[i] = "I am " + i;
+        //     let contact = new Contact("@3535345345", "鹏飞");
+        //     Data.push(contact);
         // }
-        // var chatAdapter = new ChatAdapter();
-        // chatAdapter.data = data2;
-        // this.mChatLV.adapter = chatAdapter;
-        //
-        // let isLooped = this.mWxModule.isLooped();
-        // log.I(TAG , "mWxModule.isLooped() = " + isLooped);
+        log.I(TAG , "contacts_data = " + contacts_data.length);
+        var adapter = new ContactAdapter(this.mWxModule);
+        adapter.data = contacts_data;
+        this.mContactLV.adapter = adapter;
+
+        var data2 = [];
+        for (let i = 0; i < 10; i++) {
+            data2[i] = "I am " + i;
+        }
+        var chatAdapter = new ChatAdapter();
+        chatAdapter.data = data2;
+        this.mChatLV.adapter = chatAdapter;
+        let isLooped = this.mWxModule.isLooped();
+        log.I(TAG , "mWxModule.isLooped() = " + isLooped);
     }
 }
 module.exports = Main;

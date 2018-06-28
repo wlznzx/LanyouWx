@@ -16,8 +16,6 @@ const ChatAdapter = require("./adapter/ChatAdapter");
 const ContactAdapter = require("./adapter/ContactAdapter");
 const RequireRouter = require("./RequireRouter");
 
-
-
 const TAG = "WebWx_ChatPage";
 
 class ChatPage extends Page {
@@ -92,8 +90,8 @@ class ChatPage extends Page {
 
     initDatas() {
         let Data = new Array();
-        for (let i = 0; i < 10; i++) {
-            let contact = new Contact("@3535345345", "鹏飞");
+        for (let i = 0; i < 17; i++) {
+            let contact = new Contact("@3535345345", ( "鹏飞" + i));
             Data.push(contact);
         }
         var adapter = new ContactAdapter();
@@ -115,10 +113,9 @@ class ChatPage extends Page {
         //         log.I(TAG , result);
         //     });
         // } else {
-            this.mWxModule.on("looped", () => {
-                log.I(TAG , "on looped.");
-
-            });
+        this.mWxModule.on("looped", () => {
+            log.I(TAG , "on looped.");
+        });
         // }
         // this.mWxModule.getRecentContacts().then((result) => {
         //     log.I(TAG , result);
