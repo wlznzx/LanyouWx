@@ -15,6 +15,7 @@ const Contact = require("./WebWxModule/Contact");
 const ChatAdapter = require("./adapter/ChatAdapter");
 const ContactAdapter = require("./adapter/ContactAdapter");
 const RequireRouter = require("./RequireRouter");
+const MsgInfo = require("./WebWxModule/MsgInfo");
 
 const TAG = "WebWx_ChatPage";
 
@@ -96,14 +97,14 @@ class ChatPage extends Page {
         }
         var adapter = new ContactAdapter();
         adapter.data = Data;
-        this.mContactLV.adapter = adapter;
+        // this.mContactLV.adapter = adapter;
 
         var data2 = [];
         for (let i = 0; i < 10; i++) {
             data2[i] = "I am " + i;
         }
         var chatAdapter = new ChatAdapter();
-        chatAdapter.data = data2;
+        chatAdapter.data = this.getMsgList("@xxxxsdfafas");
         this.mChatLV.adapter = chatAdapter;
 
         let isLooped = this.mWxModule.isLooped();
@@ -121,6 +122,21 @@ class ChatPage extends Page {
         //     log.I(TAG , result);
         // });
 
+    }
+
+    getMsgList(FromUserName) {
+        if(!this.chatList) {
+            this.chatList = new Array();
+        }
+        for (let i = 0; i < 10; i++) {
+            // data2[i] = "I am " + i;
+            let _msg = new MsgInfo();
+            _msg.setFromUserName(FromUserName);
+            _msg.setMsgType(1);
+            _msg.setContent("没错，叫我鹏飞！！" + FromUserName);
+            this.chatList.push(_msg);
+        }
+        return this.chatList;
     }
 }
 

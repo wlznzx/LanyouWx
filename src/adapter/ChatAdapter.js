@@ -10,6 +10,9 @@ const resource = require("yunos/content/resource/Resource").getInstance();
 const TextView = require("yunos/ui/view/TextView");
 const screen = require("yunos/device/Screen").getInstance();
 
+
+const TAG = "WebWx_ChatAdapter";
+
 class ChatAdapter extends BaseAdapter {
     createItem(position, convertView) {
         // log.I("TAG", "ChatAdapter position = " + position);
@@ -34,20 +37,20 @@ class ChatAdapter extends BaseAdapter {
         ret.addChild(iv);
         let tv = new TextView();
         iv.id = "content";
-        tv.fontSize = "14sp";
-        tv.text = "Hello , 你好.";
+        tv.fontSize = "12sp";
+        tv.text = this.data[position].Content;
         ret.addChild(tv);
         if (position === 3) {
             layout.setLayoutParam(0, "align", {right: "parent", top: "parent",middle: "parent"});
             layout.setLayoutParam(1, "align", {right: {target: 0, side: "left"},middle: "parent"});
             layout.setLayoutParam(0, "margin", {right: screen.getPixelByDp(30)});
-            layout.setLayoutParam(1, "margin", {right: screen.getPixelByDp(15)});
+            layout.setLayoutParam(1, "margin", {right: screen.getPixelByDp(5)});
             tv.text = "你好，我叫鹏飞。";
         } else {
             layout.setLayoutParam(0, "align", {left: "parent", top: "parent",middle: "parent"});
             layout.setLayoutParam(1, "align", {left: {target: 0, side: "right"},middle: "parent"});
             layout.setLayoutParam(0, "margin", {left: screen.getPixelByDp(30)});
-            layout.setLayoutParam(1, "margin", {left: screen.getPixelByDp(15)});
+            layout.setLayoutParam(1, "margin", {left: screen.getPixelByDp(5)});
         }
         ret.height = 60;
         ret.width = 200;

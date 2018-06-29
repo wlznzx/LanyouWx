@@ -21,6 +21,7 @@ const RelativeLayout = require("yunos/ui/layout/RelativeLayout");
 const TextView = require("yunos/ui/view/TextView");
 const Color = require("yunos/graphics/Color");
 const Contact = require("./WebWxModule/Contact");
+const MsgInfo = require("./WebWxModule/MsgInfo");
 const ChatAdapter = require("./adapter/ChatAdapter");
 const ContactAdapter = require("./adapter/ContactAdapter");
 const TAG = "WebWx_Main";
@@ -127,7 +128,7 @@ class Main extends Page {
         let titleLayout = new RelativeLayout();
         this.mTitleView.layout = titleLayout;
         this.contactNameTV = new TextView();
-        this.contactNameTV.fontSize = "18sp";
+        this.contactNameTV.fontSize = "12sp";
         this.contactNameTV.text = "〆木雨";
         this.mTitleView.width = width - this.mContactLV.width;
         this.mTitleView.height = 60;
@@ -136,7 +137,7 @@ class Main extends Page {
         divider.width = width - this.mContactLV.width;
         divider.id = "divider";
         // divider.background = this._style.dividerColor;
-        divider.background = "#003300";
+        divider.background = "#e5e5e5";
         this.mTitleView.addChild(this.contactNameTV);
         this.mTitleView.addChild(divider);
         titleLayout.setLayoutParam(0, "align", {left: "parent", middle: "parent"});
@@ -167,9 +168,13 @@ class Main extends Page {
         log.D(TAG, "position = " + position);
         // log.D(TAG, "position = " + this.ContactsList[position].Name);
         // log.D(TAG, itemView);
-        log.D(TAG, "onContactLvSelect =" + this.page);
+        if(this.currentItem) {
+            this.currentItem.background = "#FFFFFF";
+        }
         this.page.contactNameTV.text = this.ContactsList[position].Name;
         itemView.background = "#F2F2F2";
+        this.currentItem = itemView;
+        this.page.refreshMsgPart(this.page, this.ContactsList[position].UserName);
     }
 
 
@@ -186,15 +191,38 @@ class Main extends Page {
         adapter.data = contacts_data;
         this.mContactLV.adapter = adapter;
 
-        var data2 = [];
-        for (let i = 0; i < 10; i++) {
-            data2[i] = "I am " + i;
+        this.chatAdapter = new ChatAdapter();
+        this.chatAdapter.data = this.getMsgList("@0345834536536");
+        this.mChatLV.adapter = this.chatAdapter;
+        // let isLooped = this.mWxModule.isLooped();
+        //
+        //
+        //
+        // this.refreshMsgPart(this, "xxxxxxx");
+    }
+
+    refreshMsgPart(main, FromUserName) {
+        log.D(TAG, "onContactLvSelect =" + this);
+        log.I(TAG , "refreshMsgPart.. = " + FromUserName);
+        main.chatAdapter.data = main.getMsgList(FromUserName);
+        main.chatAdapter.onDataChange();
+        log.I(TAG , "refreshMsgPart2222.. = " + FromUserName);
+    }
+
+
+    getMsgList(FromUserName) {
+        if(!this.chatList) {
+            this.chatList = new Array();
         }
-        var chatAdapter = new ChatAdapter();
-        chatAdapter.data = data2;
-        this.mChatLV.adapter = chatAdapter;
-        let isLooped = this.mWxModule.isLooped();
-        log.I(TAG , "mWxModule.isLooped() = " + isLooped);
+        for (let i = 0; i < 10; i++) {
+            // data2[i] = "I am " + i;
+            let _msg = new MsgInfo();
+            _msg.setFromUserName(FromUserName);
+            _msg.setMsgType(1);
+            _msg.setContent("没错，叫我鹏飞！！" + FromUserName);
+            this.chatList.push(_msg);
+        }
+        return this.chatList;
     }
 }
 module.exports = Main;

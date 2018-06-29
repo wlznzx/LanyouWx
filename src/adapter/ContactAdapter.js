@@ -1,5 +1,6 @@
 "use strict";
 
+const fs = require('fs');
 const BaseAdapter = require("yunos/ui/adapter/BaseAdapter");
 const ListView = require("yunos/ui/view/ListView");
 const ImageView = require("yunos/ui/view/ImageView");
@@ -12,7 +13,10 @@ const RelativeLayout = require("yunos/ui/layout/RelativeLayout");
 const ColumnLayout = require("yunos/ui/layout/ColumnLayout");
 var imageLoader = require("yunos/util/ImageLoader").getInstance();
 var getPixelByDp = screen.getPixelByDp;
+
 const TAG = "WebWx_ContactAdapter";
+
+const IMG_PATH = "/opt/data/share/LanyouWx.yunos.com/";
 
 class ContactAdapter extends BaseAdapter {
 
@@ -20,7 +24,6 @@ class ContactAdapter extends BaseAdapter {
       super();
       this.mWxModule = _module;
     }
-
     // this.mWxModule.getHeadimg(this.data[position].UserName, (path) => {
     //         // imageLoader.displayImage(convertView.icon, path);
     //         // convertView.icon = resource.getImageSrc(path);
@@ -63,9 +66,15 @@ class ContactAdapter extends BaseAdapter {
         ret.addChild(iv);
 
         if (this.mWxModule) {
-            this.mWxModule.getHeadimg(this.data[position].UserName, (path) => {
-                imageLoader.displayImage(iv, path);
-            });
+            let _path = IMG_PATH + "_" + this.data[position].UserName;
+            if (fs.existsSync(_path)) {
+                log.D(TAG , "do re_path = " + _path);
+                imageLoader.displayImage(iv, _path);
+            } else {
+                this.mWxModule.getHeadimg(this.data[position].UserName, (path) => {
+                    imageLoader.displayImage(iv, path);
+                });
+            }
         }
 
         let tv = new TextView();
@@ -102,6 +111,8 @@ class ContactAdapter extends BaseAdapter {
         // log.D(TAG, ret._context);
         return ret;
     }
+
+
 
     buildDefault() {
         var container = new CompositeView();
