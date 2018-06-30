@@ -66,12 +66,32 @@ class Main extends Page {
 
     initCallBack() {
         this.mWxModule.on("friend" , (msg) => {
-            if (msg !== null) {
-                // log.I("wltest", msg);
+            if (msg !== null && msg.Content != '') {
+                /**/
+                let displayMsg = "新消息 ";
+                if (msg.Member.RemarkName !== '') {
+                    displayMsg += msg.Member.RemarkName;
+                } else {
+                    displayMsg += msg.Member.NickName;
+                }
+                displayMsg += ": " + msg.Content;
+                this.mMsgTextView.text = displayMsg;
+                log.D(TAG, "displayMsg = " + displayMsg);
             }
         });
         this.mWxModule.on("group" , (msg) => {
-            // log.I("wltest", msg);
+            if (msg !== null && msg.Content != '') {
+                this.mMsgTextView.text = "来自群 ${msg.Group.NickName} 的消息${msg.GroupMember.DisplayName || msg.GroupMember.NickName}: ${msg.Content}";
+                let displayMsg = "来自群 " + msg.Group.NickName + " 的消息";
+                if (msg.GroupMember.DisplayName !== '') {
+                    displayMsg += msg.GroupMember.DisplayName;
+                } else {
+                    displayMsg += msg.GroupMember.NickName;
+                }
+                displayMsg += ": " + msg.Content;
+                this.mMsgTextView.text = displayMsg;
+                log.D(TAG, "displayMsg = " + displayMsg);
+            }
         });
         this.mWxModule.on("qrcode", (url) => {
             imageLoader.displayImage(this.QRCodeIV, url);
@@ -91,7 +111,6 @@ class Main extends Page {
         });
 
         this.mWxModule.on("u_contacts", () => {
-            log.I(TAG , "on looped.");
             log.D(TAG , "getRecentContacts..");
             this.mWxModule.getRecentContacts().then((result) => {
                 // log.D(TAG , result);
@@ -129,7 +148,7 @@ class Main extends Page {
         this.mTitleView.layout = titleLayout;
         this.contactNameTV = new TextView();
         this.contactNameTV.fontSize = "12sp";
-        this.contactNameTV.text = "〆木雨";
+        this.contactNameTV.text = "";
         this.mTitleView.width = width - this.mContactLV.width;
         this.mTitleView.height = 60;
         let divider = new View(this._context);
@@ -140,27 +159,40 @@ class Main extends Page {
         divider.background = "#e5e5e5";
         this.mTitleView.addChild(this.contactNameTV);
         this.mTitleView.addChild(divider);
-        titleLayout.setLayoutParam(0, "align", {left: "parent", middle: "parent"});
-        titleLayout.setLayoutParam(0, "margin", {left: 60});
+        titleLayout.setLayoutParam(0, "align", {right: "parent", middle: "parent"});
+        titleLayout.setLayoutParam(0, "margin", {right: 60});
         titleLayout.setLayoutParam("divider", "align", {
             bottom: "parent",
             right: "parent",
             left: "parent"
         });
+
         // 右下侧最近联系人栏.
         this.mChatLV = new ListView();
         this.mChatLV.width = width - this.mContactLV.width;
         this.mChatLV.height = height - 60;
 
+        // 消息栏
+        this.mMsgTextView = new TextView();
+        this.mMsgTextView.width = width / 2;
+        this.mMsgTextView.height = 60; // top: "parent",middle: "parent"
+        this.mMsgTextView.background = "#D9D9D9";
+        this.mMsgTextView.opacity = 0.6;
+        this.mMsgTextView.text = "";
+        this.mMsgTextView.fontSize = "12sp";
+        this.mMsgTextView.verticalAlign = TextView.VerticalAlign.Middle;
 
         this.mMainView.addChild(this.mContactLV); // 0
         this.mMainView.addChild(this.mTitleView); // 1
         this.mMainView.addChild(this.mChatLV); // 2
+        this.mMainView.addChild(this.mMsgTextView); // 3
         this.mMainLayout.setLayoutParam(0, "align", {left: "parent", top: "parent"});
         this.mMainLayout.setLayoutParam(1, "align", {left: {target: 0, side: "right"},top: "parent"});
         this.mMainLayout.setLayoutParam(2, "align", {left: {target: 0, side: "right"},top: {target: 1, side: "bottom"}});
+        this.mMainLayout.setLayoutParam(3, "align", {top: "parent",center: "parent"});
         this.mMainLayout.setLayoutParam(0, "margin", {top: this.window.statusBarHeight});
         this.mMainLayout.setLayoutParam(1, "margin", {top: this.window.statusBarHeight});
+        this.mMainLayout.setLayoutParam(3, "margin", {top: this.window.statusBarHeight});
         this.window.addChild(this.mMainView);
     }
 
@@ -175,9 +207,9 @@ class Main extends Page {
         itemView.background = "#F2F2F2";
         this.currentItem = itemView;
         this.page.refreshMsgPart(this.page, this.ContactsList[position].UserName);
+
+
     }
-
-
 
     initDatas(contacts_data) {
         // log.I(TAG , "mWxModule.isLooped() = " + this.mWxModule.isLooped());
@@ -191,36 +223,43 @@ class Main extends Page {
         adapter.data = contacts_data;
         this.mContactLV.adapter = adapter;
 
-        this.chatAdapter = new ChatAdapter();
-        this.chatAdapter.data = this.getMsgList("@0345834536536");
+        this.chatAdapter = new ChatAdapter(this.mWxModule);
+        // this.chatAdapter.data = this.getMsgList();
         this.mChatLV.adapter = this.chatAdapter;
         // let isLooped = this.mWxModule.isLooped();
-        //
-        //
         //
         // this.refreshMsgPart(this, "xxxxxxx");
     }
 
+
     refreshMsgPart(main, FromUserName) {
         log.D(TAG, "onContactLvSelect =" + this);
         log.I(TAG , "refreshMsgPart.. = " + FromUserName);
-        main.chatAdapter.data = main.getMsgList(FromUserName);
-        main.chatAdapter.onDataChange();
+
+        this.mWxModule.getMsgListByWithUserName(FromUserName).then((ret) => {
+            log.I(TAG , "-----------refreshMsgPart ret------------------");
+            log.I(TAG , ret);
+            log.I(TAG , ret.length);
+            main.chatAdapter.data = main.getMsgList(ret);
+            main.chatAdapter.onDataChange();
+        });
+        // main.chatAdapter.data = main.getMsgList(FromUserName);
+        // main.chatAdapter.onDataChange();
         log.I(TAG , "refreshMsgPart2222.. = " + FromUserName);
     }
 
 
-    getMsgList(FromUserName) {
+    getMsgList(pMsgList) {
         if(!this.chatList) {
             this.chatList = new Array();
         }
-        for (let i = 0; i < 10; i++) {
-            // data2[i] = "I am " + i;
-            let _msg = new MsgInfo();
-            _msg.setFromUserName(FromUserName);
-            _msg.setMsgType(1);
-            _msg.setContent("没错，叫我鹏飞！！" + FromUserName);
-            this.chatList.push(_msg);
+        this.chatList.splice(0, this.chatList.length);
+        for (let i = 0; i < pMsgList.length; i++) {
+            // let _msg = new MsgInfo();
+            // _msg.setFromUserName(FromUserName);
+            // _msg.setMsgType(1);
+            // _msg.setContent("没错，叫我鹏飞！！");
+            this.chatList.push(pMsgList[i]);
         }
         return this.chatList;
     }

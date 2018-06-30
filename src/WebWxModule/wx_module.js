@@ -523,6 +523,15 @@ class WxModule extends EventEmitter{
     }
 
     async handleMsg(msg) {
+    //   log.I("wltest","-----------------msg-------------------");
+    //   log.I("wltest",msg);
+
+      if(msg.MsgType == '3'){
+          msg.Content = "圖片.";
+      }else if(msg.MsgType != '1' && msg.Content != '') {
+          msg.Content = "暫不支持此類型消息.";
+      }
+
       if (msg.FromUserName.includes('@@')) {
         const userId = msg.Content.match(/^(@[a-zA-Z0-9]+|[a-zA-Z0-9_-]+):<br\/>/)[1];
         msg.GroupMember = await this.getGroupMember(userId, msg.FromUserName);
@@ -532,9 +541,12 @@ class WxModule extends EventEmitter{
         //   来自群 ${msg.Group.NickName} 的消息
         //   ${msg.GroupMember.DisplayName || msg.GroupMember.NickName}: ${msg.Content}
         // `);
+        await this.mWxDao.insertMsg({WithUserName: msg.FromUserName,IsReceive: true,MsgType: msg.MsgType,Content: msg.Content,CreateTime: msg.CreateTime,IsGroup: true,GroupMember: msg.GroupMember});
         this.emit('group', msg);
         return;
       }
+
+
 
       if(msg.StatusNotifyUserName && !this.isGetRecentContacts){
           this.chatSet=msg.StatusNotifyUserName;
@@ -549,8 +561,12 @@ class WxModule extends EventEmitter{
       //   新消息
       //   ${msg.Member.RemarkName || msg.Member.NickName}: ${msg.Content}
       // `);
-      // log.I("wltest",'msg\n');
-      // log.I("wltest",msg);
+      if(msg.FromUserName == this.my.UserName && msg.Content == ''){
+
+      }else{
+          await this.mWxDao.insertMsg({WithUserName: msg.FromUserName,IsReceive: true,MsgType: msg.MsgType,Content: msg.Content,CreateTime: msg.CreateTime,IsGroup: false,GroupMember: ''});
+      }
+
       this.emit('friend', msg);
     }
 
@@ -892,12 +908,15 @@ class WxModule extends EventEmitter{
                 }else{
                   contact.setName(member.NickName);
                 }
-                log.I("wltest","id:" + i);
-                log.I("wltest",contact);
                 contacts.push(contact);
             }
         }
         return contacts;
+    }
+
+    async getMsgListByWithUserName(pWithUserName){
+        let ret = await this.mWxDao.getMsgList(pWithUserName);
+        return ret;
     }
 }
 

@@ -18,6 +18,10 @@ class WxDao{
 	    this.Groups.ensureIndex({ fieldName: 'UserName', unique: true });
 	    this.Brands.ensureIndex({ fieldName: 'UserName', unique: true });
 	    this.SPs.ensureIndex({ fieldName: 'UserName', unique: true });
+
+		// msg store
+		this.Msgs = new Datastore(); // 消息數據庫存儲.
+		this.Msgs.ensureIndex({ fieldName: 'WithUserName', unique: false });
 	}
 
 	constructor(options = {}) {
@@ -44,6 +48,15 @@ class WxDao{
 
 	async updateGroupMembers(query,updateQuery){
 		await this.GroupMembers.update(query,updateQuery,{upsert: true});
+	}
+
+	async insertMsg(msg){
+		await this.Msgs.insert(msg);
+	}
+
+	async getMsgList(pWithUserName){
+		let ret = await this.Msgs.findAsync({WithUserName : pWithUserName});
+		return ret;
 	}
 }
 

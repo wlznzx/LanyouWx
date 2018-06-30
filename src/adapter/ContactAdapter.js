@@ -39,11 +39,27 @@ class ContactAdapter extends BaseAdapter {
         // convertView.detail = "青春洋溢的少年.";
         // return convertView;
 
-        // if (!convertView) {
-        //     convertView = this._buildMsgLayout(position);
-        // } else {
-        // }
-        convertView = this._buildMsgLayout(position);
+        if (!convertView) {
+            convertView = this._buildMsgLayout(position);
+        }
+        
+        let context_tv = convertView.findViewById("content");
+        context_tv.text = this.data[position].Name;
+        let avatar_iv = convertView.findViewById("avatar");
+        if (this.mWxModule) {
+            let _path = IMG_PATH + "_" + this.data[position].UserName + ".jpg";
+            log.D(TAG , "1111 = " + _path);
+            if (fs.existsSync(_path)) {
+                log.D(TAG , "do re_path = " + _path);
+                imageLoader.displayImage(avatar_iv, _path);
+            } else {
+                this.mWxModule.getHeadimg(this.data[position].UserName, (path) => {
+                    log.D(TAG , "download = " + path);
+                    imageLoader.displayImage(avatar_iv, path);
+                });
+            }
+        }
+        // convertView = this._buildMsgLayout(position);
         return convertView;
     }
 
@@ -65,22 +81,22 @@ class ContactAdapter extends BaseAdapter {
         // iv.src = resource.getImageSrc("images/icons/pf.jpg");
         ret.addChild(iv);
 
-        if (this.mWxModule) {
-            let _path = IMG_PATH + "_" + this.data[position].UserName;
-            if (fs.existsSync(_path)) {
-                log.D(TAG , "do re_path = " + _path);
-                imageLoader.displayImage(iv, _path);
-            } else {
-                this.mWxModule.getHeadimg(this.data[position].UserName, (path) => {
-                    imageLoader.displayImage(iv, path);
-                });
-            }
-        }
+        // if (this.mWxModule) {
+        //     let _path = IMG_PATH + "_" + this.data[position].UserName;
+        //     if (fs.existsSync(_path)) {
+        //         log.D(TAG , "do re_path = " + _path);
+        //         imageLoader.displayImage(iv, _path);
+        //     } else {
+        //         this.mWxModule.getHeadimg(this.data[position].UserName, (path) => {
+        //             imageLoader.displayImage(iv, path);
+        //         });
+        //     }
+        // }
 
         let tv = new TextView();
-        iv.id = "content";
+        tv.id = "content";
         tv.fontSize = "12sp";
-        tv.text = this.data[position].Name;
+        // let tv.text = this.data[position].Name;
         ret.addChild(tv);
 
         // let tv = this.createSummary();
@@ -100,6 +116,7 @@ class ContactAdapter extends BaseAdapter {
         layout.setLayoutParam(1, "margin", {top: screen.getPixelByDp(15)});
         layout.setLayoutParam(1, "margin", {left: screen.getPixelByDp(15)});
         this.applyDividerLayout(layout);
+
 
         // container.layout = ret;
         // var contentH = textZone.layout._contentHeight + 2 * this._style.paddingTop;

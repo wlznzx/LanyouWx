@@ -128,7 +128,7 @@ class ChatPage extends Page {
         if(!this.chatList) {
             this.chatList = new Array();
         }
-        for (let i = 0; i < 10; i++) {
+        for (let i = 0; i < 20; i++) {
             // data2[i] = "I am " + i;
             let _msg = new MsgInfo();
             _msg.setFromUserName(FromUserName);
