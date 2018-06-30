@@ -38,8 +38,8 @@ class ChatAdapter extends BaseAdapter {
         var iv = new ImageView();
         var ivSize = 40;
         iv.id = "avatar";
-        iv.width = ivSize - 5;
-        iv.height = ivSize - 5;
+        iv.width = ivSize;
+        iv.height = ivSize;
         iv.scaleType = ImageView.ScaleType.Fitxy;
 
         ret.addChild(iv);
@@ -48,14 +48,14 @@ class ChatAdapter extends BaseAdapter {
         tv.fontSize = "10sp";
         ret.addChild(tv);
         if (!this.data[position].IsReceive) {
-            layout.setLayoutParam(0, "align", {right: "parent", top: "parent",middle: "parent"});
+            layout.setLayoutParam(0, "align", {right: "parent",middle: "parent"});
             layout.setLayoutParam(1, "align", {right: {target: 0, side: "left"},middle: "parent"});
             layout.setLayoutParam(0, "margin", {right: screen.getPixelByDp(30)});
             layout.setLayoutParam(1, "margin", {right: screen.getPixelByDp(5)});
             ret.height = 400;
         } else {
             ret.height = 60;
-            layout.setLayoutParam(0, "align", {left: "parent", top: "parent",middle: "parent"});
+            layout.setLayoutParam(0, "align", {left: "parent",middle: "parent"});
             layout.setLayoutParam(1, "align", {left: {target: 0, side: "right"},middle: "parent"});
             layout.setLayoutParam(0, "margin", {left: screen.getPixelByDp(30)});
             layout.setLayoutParam(1, "margin", {left: screen.getPixelByDp(5)});
@@ -74,23 +74,24 @@ class ChatAdapter extends BaseAdapter {
     }
 
     bindData(convertView, position) {
+        log.D(TAG , "bindData = " + position);
+        log.D(TAG , this.data[position]);
+        if(this.data[position].WithUserName == "") return;
+
         let content_tv = convertView.findViewById("content");
         content_tv.text = this.data[position].Content;
         let avatar_iv = convertView.findViewById("avatar");
-        if (this.mWxModule) {
-            if(position == 3){
-                this.data[position].WithUserName = this.mWxModule.my.UserName;
-            }
-            let _path = IMG_PATH + "_" + this.data[position].WithUserName + ".jpg";
-            if (fs.existsSync(_path)) {
-                // log.D(TAG , "do re_path = " + _path);
-                imageLoader.displayImage(avatar_iv, _path);
-            } else {
-                this.mWxModule.getHeadimg(this.data[position].WithUserName, (path) => {
-                    // log.D(TAG , "download = " + path);
-                    imageLoader.displayImage(avatar_iv, path);
-                });
-            }
+        if (!this.data[position].IsReceive) {
+            this.data[position].WithUserName = this.mWxModule.my.UserName;
+        }
+        let _path = IMG_PATH + "_" + this.data[position].WithUserName + ".jpg";
+        if (fs.existsSync(_path)) {
+            // log.D(TAG , "do re_path = " + _path);
+            imageLoader.displayImage(avatar_iv, _path);
+        } else if (this.mWxModule) {
+            this.mWxModule.getHeadimg(this.data[position].WithUserName, (path) => {
+                imageLoader.displayImage(avatar_iv, path);
+            });
         }
     }
 

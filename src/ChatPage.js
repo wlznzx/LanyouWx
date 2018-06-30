@@ -65,8 +65,8 @@ class ChatPage extends Page {
         divider.background = "#003300";
         this.mTitleView.addChild(contactNameTV);
         this.mTitleView.addChild(divider);
-        titleLayout.setLayoutParam(0, "align", {left: "parent", middle: "parent"});
-        titleLayout.setLayoutParam(0, "margin", {left: 60});
+        titleLayout.setLayoutParam(0, "align", { left: "parent", middle: "parent" });
+        titleLayout.setLayoutParam(0, "margin", { left: 60 });
         titleLayout.setLayoutParam("divider", "align", {
             bottom: "parent",
             right: "parent",
@@ -81,18 +81,19 @@ class ChatPage extends Page {
         this.mMainView.addChild(this.mContactLV); // 0
         this.mMainView.addChild(this.mTitleView); // 1
         this.mMainView.addChild(this.mChatLV); // 2
-        this.mMainLayout.setLayoutParam(0, "align", {left: "parent", top: "parent"});
-        this.mMainLayout.setLayoutParam(1, "align", {left: {target: 0, side: "right"},top: "parent"});
-        this.mMainLayout.setLayoutParam(2, "align", {left: {target: 0, side: "right"},top: {target: 1, side: "bottom"}});
-        this.mMainLayout.setLayoutParam(0, "margin", {top: this.window.statusBarHeight});
-        this.mMainLayout.setLayoutParam(1, "margin", {top: this.window.statusBarHeight});
+        this.mMainLayout.setLayoutParam(0, "align", { left: "parent", top: "parent" });
+        this.mMainLayout.setLayoutParam(1, "align", { left: { target: 0, side: "right" }, top: "parent" });
+        this.mMainLayout.setLayoutParam(2, "align", { left: { target: 0, side: "right" }, top: { target: 1, side: "bottom" } });
+        this.mMainLayout.setLayoutParam(0, "margin", { top: this.window.statusBarHeight });
+        this.mMainLayout.setLayoutParam(1, "margin", { top: this.window.statusBarHeight });
+        this.mMainLayout.setLayoutParam(2, "margin", { bottom: 60 });
         this.window.addChild(this.mMainView);
     }
 
     initDatas() {
         let Data = new Array();
         for (let i = 0; i < 17; i++) {
-            let contact = new Contact("@3535345345", ( "鹏飞" + i));
+            let contact = new Contact("@3535345345", ("鹏飞" + i));
             Data.push(contact);
         }
         var adapter = new ContactAdapter();
@@ -104,18 +105,19 @@ class ChatPage extends Page {
             data2[i] = "I am " + i;
         }
         var chatAdapter = new ChatAdapter();
-        chatAdapter.data = this.getMsgList("@xxxxsdfafas");
         this.mChatLV.adapter = chatAdapter;
-
+        this.mChatLV.arriveAt(19);
+        chatAdapter.data = this.getMsgList("@xxxxsdfafas");
+        this.mChatLV.arriveAt(19);
         let isLooped = this.mWxModule.isLooped();
-        log.I(TAG , "mWxModule.isLooped() = " + isLooped);
+        log.I(TAG, "mWxModule.isLooped() = " + isLooped);
         // if (isReady) {
         //     mWxModule.getRecentContacts().then((result) => {
         //         log.I(TAG , result);
         //     });
         // } else {
         this.mWxModule.on("looped", () => {
-            log.I(TAG , "on looped.");
+            log.I(TAG, "on looped.");
         });
         // }
         // this.mWxModule.getRecentContacts().then((result) => {
@@ -125,17 +127,27 @@ class ChatPage extends Page {
     }
 
     getMsgList(FromUserName) {
-        if(!this.chatList) {
+        if (!this.chatList) {
             this.chatList = new Array();
         }
         for (let i = 0; i < 20; i++) {
             // data2[i] = "I am " + i;
             let _msg = new MsgInfo();
             _msg.setFromUserName(FromUserName);
-            _msg.setMsgType(1);
-            _msg.setContent("没错，叫我鹏飞！！" + FromUserName);
+            _msg.WithUserName = "@8a7d01877cc8f2d6ec9ebb608c630b810dbd2c9c7a754ba22257a59d49e69cfc";
+            _msg.IsReceive = true;
+            _msg.MsgType = "@8a7d01877cc8f2d6ec9ebb608c630b810dbd2c9c7a754ba22257a59d49e69cfc";
+            _msg.Content = "4 " + i;
+            _msg.CreateTime = "1530339945";
+            _msg.IsGroup = false;
+            _msg.GroupMember = "";
+            _msg._id = "I5WMj3rt4nNW70mb";
             this.chatList.push(_msg);
         }
+
+        let _msg = new Object();
+        _msg.WithUserName = "";
+        this.chatList.push(_msg);
         return this.chatList;
     }
 }

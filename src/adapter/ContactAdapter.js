@@ -21,8 +21,8 @@ const IMG_PATH = "/opt/data/share/LanyouWx.yunos.com/";
 class ContactAdapter extends BaseAdapter {
 
     constructor(_module) {
-      super();
-      this.mWxModule = _module;
+        super();
+        this.mWxModule = _module;
     }
     // this.mWxModule.getHeadimg(this.data[position].UserName, (path) => {
     //         // imageLoader.displayImage(convertView.icon, path);
@@ -42,19 +42,19 @@ class ContactAdapter extends BaseAdapter {
         if (!convertView) {
             convertView = this._buildMsgLayout(position);
         }
-        
+
         let context_tv = convertView.findViewById("content");
         context_tv.text = this.data[position].Name;
         let avatar_iv = convertView.findViewById("avatar");
         if (this.mWxModule) {
             let _path = IMG_PATH + "_" + this.data[position].UserName + ".jpg";
-            log.D(TAG , "1111 = " + _path);
+            log.D(TAG, "1111 = " + _path);
             if (fs.existsSync(_path)) {
-                log.D(TAG , "do re_path = " + _path);
+                log.D(TAG, "do re_path = " + _path);
                 imageLoader.displayImage(avatar_iv, _path);
             } else {
                 this.mWxModule.getHeadimg(this.data[position].UserName, (path) => {
-                    log.D(TAG , "download = " + path);
+                    log.D(TAG, "download = " + path);
                     imageLoader.displayImage(avatar_iv, path);
                 });
             }
@@ -110,11 +110,11 @@ class ContactAdapter extends BaseAdapter {
 
         ret.background = "#FFFFFF";
         // this.configMultiState(ret);
-        layout.setLayoutParam(0, "align", {left: "parent",middle: "parent"});
-        layout.setLayoutParam(1, "align", {left: {target: 0, side: "right"},top: "parent"});
-        layout.setLayoutParam(0, "margin", {left: screen.getPixelByDp(5)});
-        layout.setLayoutParam(1, "margin", {top: screen.getPixelByDp(15)});
-        layout.setLayoutParam(1, "margin", {left: screen.getPixelByDp(15)});
+        layout.setLayoutParam(0, "align", { left: "parent", middle: "parent" });
+        layout.setLayoutParam(1, "align", { left: { target: 0, side: "right" }, top: "parent" });
+        layout.setLayoutParam(0, "margin", { left: screen.getPixelByDp(5) });
+        layout.setLayoutParam(1, "margin", { top: screen.getPixelByDp(15) });
+        layout.setLayoutParam(1, "margin", { left: screen.getPixelByDp(15) });
         this.applyDividerLayout(layout);
 
 

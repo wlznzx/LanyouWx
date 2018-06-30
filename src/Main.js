@@ -10,18 +10,11 @@ const ImageView = require("yunos/ui/view/ImageView");
 const View = require("yunos/ui/view/View");
 const LayoutManager = require("yunos/ui/markup/LayoutManager");
 var imageLoader = require("yunos/util/ImageLoader").getInstance();
-const PageLink = require("yunos/page/PageLink");
 // const Contact = require("./Contact");
-const BaseAdapter = require("yunos/ui/adapter/BaseAdapter");
 const ListView = require("yunos/ui/view/ListView");
 const CompositeView = require("yunos/ui/view/CompositeView");
-const resource = require("yunos/content/resource/Resource").getInstance();
-const screen = require("yunos/device/Screen").getInstance();
 const RelativeLayout = require("yunos/ui/layout/RelativeLayout");
 const TextView = require("yunos/ui/view/TextView");
-const Color = require("yunos/graphics/Color");
-const Contact = require("./WebWxModule/Contact");
-const MsgInfo = require("./WebWxModule/MsgInfo");
 const ChatAdapter = require("./adapter/ChatAdapter");
 const ContactAdapter = require("./adapter/ContactAdapter");
 const TAG = "WebWx_Main";
@@ -33,21 +26,8 @@ class Main extends Page {
     }
 
     onStart() {
-        /*
-        var textView = new TextView();
-        textView.text = "Hello World";
-        textView.width = this.window.width;
-        textView.height = this.window.height;
-        textView.fontSize = "50sp";
-        textView.color = "#FFFFFF";
-        textView.background = "#FF66FF";
-        textView.align = TextView.Align.Center;
-        textView.verticalAlign = TextView.VerticalAlign.Middle;
-        this.window.addChild(textView);
-        */
-        // this.mWxModule = require("./WebWxModule/wx_module").getInstance();
         this.mWxModule = RequireRouter.getRequire("./WebWxModule/wx_module").getInstance();
-        LayoutManager.load("main", (err, rootView)=> {
+        LayoutManager.load("main", (err, rootView) => {
             // if (err) throw err;
             rootView.width = this.window.width;
             rootView.height = this.window.height;
@@ -65,11 +45,11 @@ class Main extends Page {
     }
 
     initCallBack() {
-        this.mWxModule.on("friend" , (msg) => {
-            if (msg !== null && msg.Content != '') {
+        this.mWxModule.on("friend", (msg) => {
+            if (msg !== null && msg.Content !== "") {
                 /**/
                 let displayMsg = "新消息 ";
-                if (msg.Member.RemarkName !== '') {
+                if (msg.Member.RemarkName !== "") {
                     displayMsg += msg.Member.RemarkName;
                 } else {
                     displayMsg += msg.Member.NickName;
@@ -79,11 +59,11 @@ class Main extends Page {
                 log.D(TAG, "displayMsg = " + displayMsg);
             }
         });
-        this.mWxModule.on("group" , (msg) => {
-            if (msg !== null && msg.Content != '') {
+        this.mWxModule.on("group", (msg) => {
+            if (msg !== null && msg.Content !== "") {
                 this.mMsgTextView.text = "来自群 ${msg.Group.NickName} 的消息${msg.GroupMember.DisplayName || msg.GroupMember.NickName}: ${msg.Content}";
                 let displayMsg = "来自群 " + msg.Group.NickName + " 的消息";
-                if (msg.GroupMember.DisplayName !== '') {
+                if (msg.GroupMember.DisplayName !== "") {
                     displayMsg += msg.GroupMember.DisplayName;
                 } else {
                     displayMsg += msg.GroupMember.NickName;
@@ -93,6 +73,13 @@ class Main extends Page {
                 log.D(TAG, "displayMsg = " + displayMsg);
             }
         });
+
+        this.mWxModule.on("msg", (msg) => {
+            if (this.ChatWithUserName && msg.WithUserName === this.ChatWithUserName) {
+                this.refreshMsgPart(this.ChatWithUserName);
+            }
+        });
+
         this.mWxModule.on("qrcode", (url) => {
             imageLoader.displayImage(this.QRCodeIV, url);
         });
@@ -111,7 +98,7 @@ class Main extends Page {
         });
 
         this.mWxModule.on("u_contacts", () => {
-            log.D(TAG , "getRecentContacts..");
+            log.D(TAG, "getRecentContacts..");
             this.mWxModule.getRecentContacts().then((result) => {
                 // log.D(TAG , result);
                 this.mContactLV.ContactsList = result;
@@ -186,13 +173,14 @@ class Main extends Page {
         this.mMainView.addChild(this.mTitleView); // 1
         this.mMainView.addChild(this.mChatLV); // 2
         this.mMainView.addChild(this.mMsgTextView); // 3
-        this.mMainLayout.setLayoutParam(0, "align", {left: "parent", top: "parent"});
-        this.mMainLayout.setLayoutParam(1, "align", {left: {target: 0, side: "right"},top: "parent"});
-        this.mMainLayout.setLayoutParam(2, "align", {left: {target: 0, side: "right"},top: {target: 1, side: "bottom"}});
-        this.mMainLayout.setLayoutParam(3, "align", {top: "parent",center: "parent"});
-        this.mMainLayout.setLayoutParam(0, "margin", {top: this.window.statusBarHeight});
-        this.mMainLayout.setLayoutParam(1, "margin", {top: this.window.statusBarHeight});
-        this.mMainLayout.setLayoutParam(3, "margin", {top: this.window.statusBarHeight});
+        this.mMainLayout.setLayoutParam(0, "align", { left: "parent", top: "parent" });
+        this.mMainLayout.setLayoutParam(1, "align", { left: { target: 0, side: "right" }, top: "parent" });
+        this.mMainLayout.setLayoutParam(2, "align", { left: { target: 0, side: "right" }, top: { target: 1, side: "bottom" } });
+        this.mMainLayout.setLayoutParam(3, "align", { top: "parent", center: "parent" });
+        this.mMainLayout.setLayoutParam(0, "margin", { top: this.window.statusBarHeight });
+        this.mMainLayout.setLayoutParam(1, "margin", { top: this.window.statusBarHeight });
+        this.mMainLayout.setLayoutParam(2, "margin", { bottom: 60 });
+        this.mMainLayout.setLayoutParam(3, "margin", { top: this.window.statusBarHeight });
         this.window.addChild(this.mMainView);
     }
 
@@ -200,25 +188,18 @@ class Main extends Page {
         log.D(TAG, "position = " + position);
         // log.D(TAG, "position = " + this.ContactsList[position].Name);
         // log.D(TAG, itemView);
-        if(this.currentItem) {
+        if (this.currentItem) {
             this.currentItem.background = "#FFFFFF";
         }
         this.page.contactNameTV.text = this.ContactsList[position].Name;
         itemView.background = "#F2F2F2";
+        this.page.ChatWithUserName = this.ContactsList[position].UserName;
         this.currentItem = itemView;
-        this.page.refreshMsgPart(this.page, this.ContactsList[position].UserName);
-
-
+        this.page.refreshMsgPart.call(this.page, this.ContactsList[position].UserName);
     }
 
     initDatas(contacts_data) {
-        // log.I(TAG , "mWxModule.isLooped() = " + this.mWxModule.isLooped());
-        // let Data = new Array();
-        // for (let i = 0; i < 10; i++) {
-        //     let contact = new Contact("@3535345345", "鹏飞");
-        //     Data.push(contact);
-        // }
-        log.I(TAG , "contacts_data = " + contacts_data.length);
+        log.I(TAG, "contacts_data = " + contacts_data.length);
         var adapter = new ContactAdapter(this.mWxModule);
         adapter.data = contacts_data;
         this.mContactLV.adapter = adapter;
@@ -228,39 +209,33 @@ class Main extends Page {
         this.mChatLV.adapter = this.chatAdapter;
         // let isLooped = this.mWxModule.isLooped();
         //
-        // this.refreshMsgPart(this, "xxxxxxx");
     }
 
 
-    refreshMsgPart(main, FromUserName) {
-        log.D(TAG, "onContactLvSelect =" + this);
-        log.I(TAG , "refreshMsgPart.. = " + FromUserName);
-
+    refreshMsgPart(FromUserName) {
+        // log.D(TAG, "onContactLvSelect =" + this);
+        log.I(TAG, "refreshMsgPart.. = " + FromUserName);
         this.mWxModule.getMsgListByWithUserName(FromUserName).then((ret) => {
-            log.I(TAG , "-----------refreshMsgPart ret------------------");
-            log.I(TAG , ret);
-            log.I(TAG , ret.length);
-            main.chatAdapter.data = main.getMsgList(ret);
-            main.chatAdapter.onDataChange();
+            log.I(TAG, ret);
+            log.I(TAG, ret.length);
+            this.chatAdapter.data = this.getMsgList(ret);
+            this.chatAdapter.onDataChange();
+            this.mChatLV.arriveAt(this.chatAdapter.getCount() - 1);
         });
-        // main.chatAdapter.data = main.getMsgList(FromUserName);
-        // main.chatAdapter.onDataChange();
-        log.I(TAG , "refreshMsgPart2222.. = " + FromUserName);
     }
 
 
     getMsgList(pMsgList) {
-        if(!this.chatList) {
+        if (!this.chatList) {
             this.chatList = new Array();
         }
         this.chatList.splice(0, this.chatList.length);
         for (let i = 0; i < pMsgList.length; i++) {
-            // let _msg = new MsgInfo();
-            // _msg.setFromUserName(FromUserName);
-            // _msg.setMsgType(1);
-            // _msg.setContent("没错，叫我鹏飞！！");
             this.chatList.push(pMsgList[i]);
         }
+        let _msg = new Object();
+        _msg.WithUserName = "";
+        this.chatList.push(_msg);
         return this.chatList;
     }
 }
