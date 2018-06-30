@@ -74,8 +74,8 @@ class ChatAdapter extends BaseAdapter {
     }
 
     bindData(convertView, position) {
-        log.D(TAG , "bindData = " + position);
-        log.D(TAG , this.data[position]);
+        // log.D(TAG , "bindData = " + position);
+        // log.D(TAG , this.data[position]);
         if(this.data[position].WithUserName == "") return;
 
         let content_tv = convertView.findViewById("content");

@@ -43,12 +43,14 @@ class ContactAdapter extends BaseAdapter {
             convertView = this._buildMsgLayout(position);
         }
 
+        log.D(TAG, "createItem = " + position);
+        log.D(TAG, this.data[position]);
+
         let context_tv = convertView.findViewById("content");
         context_tv.text = this.data[position].Name;
         let avatar_iv = convertView.findViewById("avatar");
         if (this.mWxModule) {
             let _path = IMG_PATH + "_" + this.data[position].UserName + ".jpg";
-            log.D(TAG, "1111 = " + _path);
             if (fs.existsSync(_path)) {
                 log.D(TAG, "do re_path = " + _path);
                 imageLoader.displayImage(avatar_iv, _path);
@@ -58,6 +60,13 @@ class ContactAdapter extends BaseAdapter {
                     imageLoader.displayImage(avatar_iv, path);
                 });
             }
+        }
+
+        let pointIv = convertView.findViewById("point");
+        if (this.data[position].hasNewMsg) {
+            pointIv.visibility = View.Visibility.Visible;
+        } else {
+            pointIv.visibility = View.Visibility.Hidden;
         }
         // convertView = this._buildMsgLayout(position);
         return convertView;
@@ -81,18 +90,6 @@ class ContactAdapter extends BaseAdapter {
         // iv.src = resource.getImageSrc("images/icons/pf.jpg");
         ret.addChild(iv);
 
-        // if (this.mWxModule) {
-        //     let _path = IMG_PATH + "_" + this.data[position].UserName;
-        //     if (fs.existsSync(_path)) {
-        //         log.D(TAG , "do re_path = " + _path);
-        //         imageLoader.displayImage(iv, _path);
-        //     } else {
-        //         this.mWxModule.getHeadimg(this.data[position].UserName, (path) => {
-        //             imageLoader.displayImage(iv, path);
-        //         });
-        //     }
-        // }
-
         let tv = new TextView();
         tv.id = "content";
         tv.fontSize = "12sp";
@@ -107,25 +104,27 @@ class ContactAdapter extends BaseAdapter {
         divider.id = "divider";
         divider.background = "#e5e5e5";
         ret.addChild(divider);
+        // add point;
+        var pointIv = new ImageView();
+        pointIv.width = 16;
+        pointIv.height = 16;
+        pointIv.id = "point";
+        pointIv.scaleType = ImageView.ScaleType.Fitxy;
+        pointIv.src = resource.getImageSrc("images/red_point.png");
+        ret.addChild(pointIv);
 
         ret.background = "#FFFFFF";
         // this.configMultiState(ret);
         layout.setLayoutParam(0, "align", { left: "parent", middle: "parent" });
         layout.setLayoutParam(1, "align", { left: { target: 0, side: "right" }, top: "parent" });
+        layout.setLayoutParam("point", "align", { right: "parent", middle: "parent" });
         layout.setLayoutParam(0, "margin", { left: screen.getPixelByDp(5) });
         layout.setLayoutParam(1, "margin", { top: screen.getPixelByDp(15) });
         layout.setLayoutParam(1, "margin", { left: screen.getPixelByDp(15) });
+        layout.setLayoutParam("point", "margin", { right: screen.getPixelByDp(15) });
+
         this.applyDividerLayout(layout);
 
-
-        // container.layout = ret;
-        // var contentH = textZone.layout._contentHeight + 2 * this._style.paddingTop;
-        // container.height = this.realHeight(this._style.defaultHeight, contentH);
-        // this._icon = iv;
-        // container.addChild(iv);
-        // this.createItem(container, false);
-        // this.buildDefault();
-        // log.D(TAG, ret._context);
         return ret;
     }
 

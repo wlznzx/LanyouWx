@@ -17,6 +17,8 @@ const RelativeLayout = require("yunos/ui/layout/RelativeLayout");
 const TextView = require("yunos/ui/view/TextView");
 const ChatAdapter = require("./adapter/ChatAdapter");
 const ContactAdapter = require("./adapter/ContactAdapter");
+const AlertDialog = require("yunos/ui/widget/AlertDialog");
+const Loading = require("yunos/ui/widget/Loading");
 const TAG = "WebWx_Main";
 
 class Main extends Page {
@@ -25,6 +27,28 @@ class Main extends Page {
         this.parent = this.window;
     }
 
+    onBackKey() {
+        let dialog = new AlertDialog();
+        dialog.title = "退出";
+        dialog.message = "您确定要退出吗？";
+        dialog.buttons = [{text: "取消"}, {text: "确定", color: AlertDialog.TextColor.Positive}];
+
+        dialog.on("result", (index) => {
+            if(index == 0){
+                dialog.close();
+            }else if(index == 1){
+                this.stopPage();
+            }
+        });
+        dialog.show();
+        return true;
+
+
+    }
+
+
+
+
     onStart() {
         this.mWxModule = RequireRouter.getRequire("./WebWxModule/wx_module").getInstance();
         LayoutManager.load("main", (err, rootView) => {
@@ -32,8 +56,6 @@ class Main extends Page {
             rootView.width = this.window.width;
             rootView.height = this.window.height;
             this.window.addChild(rootView);
-            // let mainLayout = rootView.findViewById("MainLayout");
-            // mainLayout.height = this.window.height;
             this.QRCodeIV = rootView.findViewById("QRCodeIv");
             this.QRCodeIV.scaleType = ImageView.ScaleType.Center;
             this.TipsTV = rootView.findViewById("TipsTV");
@@ -78,6 +100,7 @@ class Main extends Page {
             if (this.ChatWithUserName && msg.WithUserName === this.ChatWithUserName) {
                 this.refreshMsgPart(this.ChatWithUserName);
             }
+            this.refreshContactPart(msg.WithUserName);
         });
 
         this.mWxModule.on("qrcode", (url) => {
@@ -100,10 +123,8 @@ class Main extends Page {
         this.mWxModule.on("u_contacts", () => {
             log.D(TAG, "getRecentContacts..");
             this.mWxModule.getRecentContacts().then((result) => {
-                // log.D(TAG , result);
                 this.mContactLV.ContactsList = result;
                 log.D(TAG, "position = " + result[1].Name);
-                // log.D(TAG, "position = " + this.ContactsList[1].Name);
                 this.initDatas(result);
             });
         });
@@ -146,8 +167,8 @@ class Main extends Page {
         divider.background = "#e5e5e5";
         this.mTitleView.addChild(this.contactNameTV);
         this.mTitleView.addChild(divider);
-        titleLayout.setLayoutParam(0, "align", {right: "parent", middle: "parent"});
-        titleLayout.setLayoutParam(0, "margin", {right: 60});
+        titleLayout.setLayoutParam(0, "align", { right: "parent", middle: "parent" });
+        titleLayout.setLayoutParam(0, "margin", { right: 60 });
         titleLayout.setLayoutParam("divider", "align", {
             bottom: "parent",
             right: "parent",
@@ -196,19 +217,44 @@ class Main extends Page {
         this.page.ChatWithUserName = this.ContactsList[position].UserName;
         this.currentItem = itemView;
         this.page.refreshMsgPart.call(this.page, this.ContactsList[position].UserName);
+
+
+        // 去掉最近聊天欄目的小紅點.
+        this.ContactsList[position].hasNewMsg = false;
+        this.page.mContactAdapter.data = this.page.mContactLV.ContactsList;
+        this.page.mContactAdapter.onDataChange();
     }
 
     initDatas(contacts_data) {
         log.I(TAG, "contacts_data = " + contacts_data.length);
-        var adapter = new ContactAdapter(this.mWxModule);
-        adapter.data = contacts_data;
-        this.mContactLV.adapter = adapter;
+        this.mContactAdapter = new ContactAdapter(this.mWxModule);
+        this.mContactAdapter.data = contacts_data;
+        this.mContactLV.adapter = this.mContactAdapter;
 
         this.chatAdapter = new ChatAdapter(this.mWxModule);
         // this.chatAdapter.data = this.getMsgList();
         this.mChatLV.adapter = this.chatAdapter;
         // let isLooped = this.mWxModule.isLooped();
-        //
+    }
+
+
+    // 更新....
+    refreshContactPart(WithUserName) {
+        let index;
+        for (let i = 0; i < this.mContactLV.ContactsList.length; i++) {
+            if (this.mContactLV.ContactsList[i].UserName === WithUserName) {
+                index = i;
+                break;
+            }
+        }
+        log.D(TAG, "refreshContactPart index = " + index);
+        if (index) {
+            let _contact = this.mContactLV.ContactsList.splice(index, 1);
+            _contact[0].hasNewMsg = true;
+            this.mContactLV.ContactsList.unshift(_contact[0]);
+            this.mContactAdapter.data = this.mContactLV.ContactsList;
+            this.mContactAdapter.onDataChange();
+        }
     }
 
 

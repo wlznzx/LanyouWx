@@ -93,12 +93,13 @@ class ChatPage extends Page {
     initDatas() {
         let Data = new Array();
         for (let i = 0; i < 17; i++) {
-            let contact = new Contact("@3535345345", ("鹏飞" + i));
+            let contact = new Contact("@3535345345", ("鹏飞" + i),"");
+            contact.hasNewMsg = true;
             Data.push(contact);
         }
         var adapter = new ContactAdapter();
         adapter.data = Data;
-        // this.mContactLV.adapter = adapter;
+        this.mContactLV.adapter = adapter;
 
         var data2 = [];
         for (let i = 0; i < 10; i++) {
