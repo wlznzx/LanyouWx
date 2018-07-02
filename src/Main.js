@@ -19,6 +19,10 @@ const ChatAdapter = require("./adapter/ChatAdapter");
 const ContactAdapter = require("./adapter/ContactAdapter");
 const AlertDialog = require("yunos/ui/widget/AlertDialog");
 const Loading = require("yunos/ui/widget/Loading");
+const PopupMenu = require("yunos/ui/widget/PopupMenu");
+const Button = require("yunos/ui/widget/Button");
+const RowLayout = require("yunos/ui/layout/RowLayout");
+
 const TAG = "WebWx_Main";
 
 class Main extends Page {
@@ -31,23 +35,18 @@ class Main extends Page {
         let dialog = new AlertDialog();
         dialog.title = "退出";
         dialog.message = "您确定要退出吗？";
-        dialog.buttons = [{text: "取消"}, {text: "确定", color: AlertDialog.TextColor.Positive}];
+        dialog.buttons = [{ text: "取消" }, { text: "确定", color: AlertDialog.TextColor.Positive }];
 
         dialog.on("result", (index) => {
-            if(index == 0){
+            if (index == 0) {
                 dialog.close();
-            }else if(index == 1){
+            } else if (index == 1) {
                 this.stopPage();
             }
         });
         dialog.show();
         return true;
-
-
     }
-
-
-
 
     onStart() {
         this.mWxModule = RequireRouter.getRequire("./WebWxModule/wx_module").getInstance();
@@ -68,7 +67,7 @@ class Main extends Page {
 
     initCallBack() {
         this.mWxModule.on("friend", (msg) => {
-            if (msg !== null && msg.Content !== "") {
+            if (msg !== null && msg.Content !== "" && this.isLopped) {
                 /**/
                 let displayMsg = "新消息 ";
                 if (msg.Member.RemarkName !== "") {
@@ -82,7 +81,7 @@ class Main extends Page {
             }
         });
         this.mWxModule.on("group", (msg) => {
-            if (msg !== null && msg.Content !== "") {
+            if (msg !== null && msg.Content !== "" && this.isLopped) {
                 this.mMsgTextView.text = "来自群 ${msg.Group.NickName} 的消息${msg.GroupMember.DisplayName || msg.GroupMember.NickName}: ${msg.Content}";
                 let displayMsg = "来自群 " + msg.Group.NickName + " 的消息";
                 if (msg.GroupMember.DisplayName !== "") {
@@ -128,6 +127,26 @@ class Main extends Page {
                 this.initDatas(result);
             });
         });
+
+        //手机微信退出时，restart界面
+        this.mWxModule.on("restart", () => {
+            log.I("test", "界面restart");
+            this.window.removeAllChildren();
+            this.initLoadingView();
+        });
+
+        //在uuid获取失败和登录检查失败时，打印连接异常
+        this.mWxModule.on("connectErro", () => {
+            this.TipsTV.text = "连接异常，请检查网络！";
+        });
+
+
+        //联系人界面时网络异常处理
+        this.mWxModule.on("connectErro2", (needAlert) => {
+
+
+        });
+
         this.mWxModule.doRun();
     }
 
@@ -190,17 +209,83 @@ class Main extends Page {
         this.mMsgTextView.fontSize = "12sp";
         this.mMsgTextView.verticalAlign = TextView.VerticalAlign.Middle;
 
+        this.loading = new Loading();
+        this.loading.id = "loading";
+        this.loading.sizeStyle = Loading.SizeStyle.Big;
+
+        // 右下侧输入栏
+        this.inputView = new CompositeView();
+        this.inputView.id = "input_view";
+        this.inputView.height = 30;
+        this.inputView.width = this.mChatLV.width;
+        let inputLayout = new RowLayout();
+        inputLayout.spacing = 0;
+        this.inputView.layout = inputLayout;
+
+        let emojiBtn = new Button();
+        emojiBtn.sizeType = Button.SizeType.Small;
+        emojiBtn.buttonColor = "rgba(123,127,141,0.6)";
+        emojiBtn.text = "表情";
+        emojiBtn.height = this.inputView.height;
+        emojiBtn.width = this.inputView.width / 2;
+        let textInputBtn = new Button();
+        textInputBtn.sizeType = Button.SizeType.Small;
+        textInputBtn.buttonColor = "rgba(123,127,141,0.6)";
+        textInputBtn.height = this.inputView.height;
+        textInputBtn.width = this.inputView.width / 2;
+        textInputBtn.text = "默认输入";
+        textInputBtn.on("tap", () => {
+            let left = textInputBtn.left;
+            let top = textInputBtn.top;
+            let parent = textInputBtn.parent;
+            while (parent) {
+                left += parent.left;
+                top += parent.top;
+                parent = parent.parent;
+            }
+            top -= textInputBtn.height + this.textInuputMenu.height;
+            this.textInuputMenu.show(left, top);
+        });
+
+        this.defaultMsg = ["你好！", "我正在開車呢，稍後給您回電話.", "[微笑]"];
+        this.textInuputMenu = new PopupMenu();
+        this.textInuputMenu.width = textInputBtn.width;
+        let textInputItems = [
+            new PopupMenu.PopupMenuItem(this.defaultMsg[0]),
+            new PopupMenu.PopupMenuItem(this.defaultMsg[1]),
+            new PopupMenu.PopupMenuItem(this.defaultMsg[2])
+        ];
+        for (let item of textInputItems) {
+            this.textInuputMenu.addChild(item);
+        }
+        this.textInuputMenu.on("result", (index) => {
+            if (this.ChatWithUserName) {
+                this.mWxModule.sendText(this.ChatWithUserName, this.defaultMsg[index]);
+            }
+        });
+
+        this.inputView.visibility = View.Visibility.Hidden;
+        this.inputView.addChild(emojiBtn);
+        this.inputView.addChild(textInputBtn);
+
+
         this.mMainView.addChild(this.mContactLV); // 0
         this.mMainView.addChild(this.mTitleView); // 1
         this.mMainView.addChild(this.mChatLV); // 2
         this.mMainView.addChild(this.mMsgTextView); // 3
+        this.mMainView.addChild(this.loading); // 4
+        this.mMainView.addChild(this.inputView);
+
+        this.loading.start();
         this.mMainLayout.setLayoutParam(0, "align", { left: "parent", top: "parent" });
         this.mMainLayout.setLayoutParam(1, "align", { left: { target: 0, side: "right" }, top: "parent" });
         this.mMainLayout.setLayoutParam(2, "align", { left: { target: 0, side: "right" }, top: { target: 1, side: "bottom" } });
         this.mMainLayout.setLayoutParam(3, "align", { top: "parent", center: "parent" });
+        this.mMainLayout.setLayoutParam("loading", "align", { center: "parent", middle: "parent" });
+        this.mMainLayout.setLayoutParam("input_view", "align", { left: { target: 0, side: "right" }, bottom: "parent" });
         this.mMainLayout.setLayoutParam(0, "margin", { top: this.window.statusBarHeight });
         this.mMainLayout.setLayoutParam(1, "margin", { top: this.window.statusBarHeight });
-        this.mMainLayout.setLayoutParam(2, "margin", { bottom: 60 });
+        this.mMainLayout.setLayoutParam(2, "margin", { bottom: 30 });
         this.mMainLayout.setLayoutParam(3, "margin", { top: this.window.statusBarHeight });
         this.window.addChild(this.mMainView);
     }
@@ -226,6 +311,7 @@ class Main extends Page {
     }
 
     initDatas(contacts_data) {
+        this.mMsgTextView.text = "數據加載中...";
         log.I(TAG, "contacts_data = " + contacts_data.length);
         this.mContactAdapter = new ContactAdapter(this.mWxModule);
         this.mContactAdapter.data = contacts_data;
@@ -235,11 +321,22 @@ class Main extends Page {
         // this.chatAdapter.data = this.getMsgList();
         this.mChatLV.adapter = this.chatAdapter;
         // let isLooped = this.mWxModule.isLooped();
+        this.dataReady();
+        this.isLopped = true;
+    }
+
+    dataReady() {
+        if (this.mMsgTextView) {
+            this.mMainView.removeChild(this.loading);
+            this.mMsgTextView.text = "";
+            this.inputView.visibility = View.Visibility.Visible;
+        }
     }
 
 
     // 更新....
     refreshContactPart(WithUserName) {
+        if (!this.isLopped) return;
         let index;
         for (let i = 0; i < this.mContactLV.ContactsList.length; i++) {
             if (this.mContactLV.ContactsList[i].UserName === WithUserName) {
@@ -259,6 +356,7 @@ class Main extends Page {
 
 
     refreshMsgPart(FromUserName) {
+        if (!this.isLopped) return;
         // log.D(TAG, "onContactLvSelect =" + this);
         log.I(TAG, "refreshMsgPart.. = " + FromUserName);
         this.mWxModule.getMsgListByWithUserName(FromUserName).then((ret) => {

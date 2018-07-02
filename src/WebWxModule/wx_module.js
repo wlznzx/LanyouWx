@@ -550,8 +550,6 @@ class WxModule extends EventEmitter {
             console.log("this.chatSet:" + this.chatSet);
         }
 
-        // 自己发送的数据.
-
         msg.Member = await this.getMember(msg.FromUserName);
         if (!msg.Member) return;
         // log.I("wltest",`
@@ -839,7 +837,7 @@ class WxModule extends EventEmitter {
             if (!data || !data.BaseResponse || data.BaseResponse.Ret !== 0) {
                 return callback(new Error('Send text fail'));
             }
-
+            this.msgInsert({ WithUserName: to, IsReceive: false, MsgType: 1, Content: content, CreateTime: 12351235, IsGroup: false, GroupMember: '' });
             callback();
         }).catch((e) => {
             // network error, retry

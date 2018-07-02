@@ -17,6 +17,9 @@ const ContactAdapter = require("./adapter/ContactAdapter");
 const RequireRouter = require("./RequireRouter");
 const MsgInfo = require("./WebWxModule/MsgInfo");
 
+const Image = require("yunos/multimedia/Image");
+const Bitmap = require("yunos/graphics/Bitmap");
+
 const TAG = "WebWx_ChatPage";
 
 class ChatPage extends Page {
@@ -77,13 +80,27 @@ class ChatPage extends Page {
         this.mChatLV.width = width - this.mContactLV.width;
         this.mChatLV.height = height - 60;
 
+        var ImagePath = resource.getImageSrc("/images/qqface.png");
+        var bitmap1 = new Image(ImagePath).getBitmap();
+        var bitmap2 = new Image(ImagePath).getBitmap();
+
+        var imagedata = bitmap1.getImageData(0, 0, 30, 30);
+        bitmap2.putImageData(imagedata, 0, 0, 0, 0, 30, 30);
+
+        var imageview = new ImageView();
+        imageview.id = "iiiv";
+        imageview.src = bitmap2;
+
+
 
         this.mMainView.addChild(this.mContactLV); // 0
         this.mMainView.addChild(this.mTitleView); // 1
         this.mMainView.addChild(this.mChatLV); // 2
+        this.mMainView.addChild(imageview);
         this.mMainLayout.setLayoutParam(0, "align", { left: "parent", top: "parent" });
         this.mMainLayout.setLayoutParam(1, "align", { left: { target: 0, side: "right" }, top: "parent" });
         this.mMainLayout.setLayoutParam(2, "align", { left: { target: 0, side: "right" }, top: { target: 1, side: "bottom" } });
+        this.mMainLayout.setLayoutParam("iiiv", "align", { center: "parent", middle: "parent" });
         this.mMainLayout.setLayoutParam(0, "margin", { top: this.window.statusBarHeight });
         this.mMainLayout.setLayoutParam(1, "margin", { top: this.window.statusBarHeight });
         this.mMainLayout.setLayoutParam(2, "margin", { bottom: 60 });
@@ -93,7 +110,7 @@ class ChatPage extends Page {
     initDatas() {
         let Data = new Array();
         for (let i = 0; i < 17; i++) {
-            let contact = new Contact("@3535345345", ("鹏飞" + i),"");
+            let contact = new Contact("@3535345345", ("鹏飞" + i), "");
             contact.hasNewMsg = true;
             Data.push(contact);
         }
@@ -124,6 +141,8 @@ class ChatPage extends Page {
         // this.mWxModule.getRecentContacts().then((result) => {
         //     log.I(TAG , result);
         // });
+        //
+
 
     }
 
