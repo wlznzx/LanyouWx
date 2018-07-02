@@ -21,7 +21,10 @@ const AlertDialog = require("yunos/ui/widget/AlertDialog");
 const Loading = require("yunos/ui/widget/Loading");
 const PopupMenu = require("yunos/ui/widget/PopupMenu");
 const Button = require("yunos/ui/widget/Button");
+const ImageButton = require("yunos/ui/widget/ImageButton");
 const RowLayout = require("yunos/ui/layout/RowLayout");
+const resource = require("yunos/content/resource/Resource").getInstance();
+
 
 const TAG = "WebWx_Main";
 
@@ -50,19 +53,31 @@ class Main extends Page {
 
     onStart() {
         this.mWxModule = RequireRouter.getRequire("./WebWxModule/wx_module").getInstance();
+        //  LayoutManager.load("main", (err, rootView) => {
+        // if (err) throw err;
+        //      rootView.width = this.window.width;
+        //      rootView.height = this.window.height;
+        //      this.window.addChild(rootView);
+        //    this.QRCodeIV = rootView.findViewById("QRCodeIv");
+        //     this.QRCodeIV.scaleType = ImageView.ScaleType.Center;
+        //     this.TipsTV = rootView.findViewById("TipsTV");
+        // putBtn.on("tap", ()=> {
+        //     log.D(TAG, "tap", putBtn.text);
+        // });
+        // });
+        this.initLoadingView();
+        this.initCallBack();
+    }
+
+    initLoadingView() {
         LayoutManager.load("main", (err, rootView) => {
-            // if (err) throw err;
             rootView.width = this.window.width;
             rootView.height = this.window.height;
             this.window.addChild(rootView);
             this.QRCodeIV = rootView.findViewById("QRCodeIv");
             this.QRCodeIV.scaleType = ImageView.ScaleType.Center;
             this.TipsTV = rootView.findViewById("TipsTV");
-            // putBtn.on("tap", ()=> {
-            //     log.D(TAG, "tap", putBtn.text);
-            // });
         });
-        this.initCallBack();
     }
 
     initCallBack() {
@@ -132,6 +147,12 @@ class Main extends Page {
         this.mWxModule.on("restart", () => {
             log.I("test", "界面restart");
             this.window.removeAllChildren();
+            if (this.optionsMenu != null) {
+                this.optionsMenu.close();
+            }
+            if (this.textInuputMenu != null) {
+                this.textInuputMenu.close();
+            }
             this.initLoadingView();
         });
 
@@ -164,13 +185,60 @@ class Main extends Page {
 
         // 左侧最近联系人栏.
         this.mContactLV = new ListView();
+        this.mContactLV.id = "contactlv";
         this.mContactLV.width = width / 3;
         this.mContactLV.height = height;
 
         this.mContactLV.on("itemselect", this.onContactLvSelect);
         this.mContactLV.page = this;
+
+        // 右上侧菜单按钮
+        let optionsBtn = new ImageButton();
+        optionsBtn.styleType = ImageButton.StyleType.Block;
+        optionsBtn.multiState = {
+            focused: {
+                background: "#FFFFFF",
+                opacity: 0
+            },
+            pressed: {
+                background: "#FFFFFF",
+                opacity: 0
+            }
+        };
+        optionsBtn.src = resource.getImageSrc("/images/setting.png");
+
+        optionsBtn.height = 30;
+        optionsBtn.width = 30;
+        optionsBtn.on("tap", () => {
+            let left = optionsBtn.left;
+            let top = optionsBtn.top;
+            let parent = optionsBtn.parent;
+            while (parent) {
+                left += parent.left;
+                top += parent.top;
+                parent = parent.parent;
+            }
+            left -= this.optionsMenu.width - optionsBtn.width;
+            top += optionsBtn.height;
+            this.optionsMenu.show(left, top);
+        });
+
+        this.optionsMenu = new PopupMenu();
+        let items = [
+            new PopupMenu.PopupMenuItem("自动播报"),
+            new PopupMenu.PopupMenuItem("新手指南"),
+            new PopupMenu.PopupMenuItem("登出")
+        ];
+        for (let item of items) {
+            this.optionsMenu.addChild(item);
+        }
+        this.optionsMenu.on("result", (index) => {
+            //通过index跳转实现不同的界面与功能。
+        });
+
         // 右上侧对话框.
         this.mTitleView = new CompositeView();
+        this.mTitleView.id = "titleview";
         let titleLayout = new RelativeLayout();
         this.mTitleView.layout = titleLayout;
         this.contactNameTV = new TextView();
@@ -185,9 +253,12 @@ class Main extends Page {
         // divider.background = this._style.dividerColor;
         divider.background = "#e5e5e5";
         this.mTitleView.addChild(this.contactNameTV);
+        this.mTitleView.addChild(optionsBtn);
         this.mTitleView.addChild(divider);
         titleLayout.setLayoutParam(0, "align", { right: "parent", middle: "parent" });
         titleLayout.setLayoutParam(0, "margin", { right: 60 });
+        titleLayout.setLayoutParam(1, "align", { right: "parent", middle: "parent" });
+        titleLayout.setLayoutParam(1, "margin", { right: 15 });
         titleLayout.setLayoutParam("divider", "align", {
             bottom: "parent",
             right: "parent",
@@ -196,11 +267,13 @@ class Main extends Page {
 
         // 右下侧最近联系人栏.
         this.mChatLV = new ListView();
+        this.mChatLV.id = "chatlv";
         this.mChatLV.width = width - this.mContactLV.width;
         this.mChatLV.height = height - 60;
 
         // 消息栏
         this.mMsgTextView = new TextView();
+        this.mMsgTextView.id = "msgtv";
         this.mMsgTextView.width = width / 2;
         this.mMsgTextView.height = 60; // top: "parent",middle: "parent"
         this.mMsgTextView.background = "#D9D9D9";
@@ -277,16 +350,16 @@ class Main extends Page {
         this.mMainView.addChild(this.inputView);
 
         this.loading.start();
-        this.mMainLayout.setLayoutParam(0, "align", { left: "parent", top: "parent" });
-        this.mMainLayout.setLayoutParam(1, "align", { left: { target: 0, side: "right" }, top: "parent" });
-        this.mMainLayout.setLayoutParam(2, "align", { left: { target: 0, side: "right" }, top: { target: 1, side: "bottom" } });
-        this.mMainLayout.setLayoutParam(3, "align", { top: "parent", center: "parent" });
+        this.mMainLayout.setLayoutParam("contactlv", "align", { left: "parent", top: "parent" });
+        this.mMainLayout.setLayoutParam("titleview", "align", { left: { target: "contactlv", side: "right" }, top: "parent" });
+        this.mMainLayout.setLayoutParam("chatlv", "align", { left: { target: "contactlv", side: "right" }, top: { target: "titleview", side: "bottom" } });
+        this.mMainLayout.setLayoutParam("msgtv", "align", { top: "parent", center: "parent" });
         this.mMainLayout.setLayoutParam("loading", "align", { center: "parent", middle: "parent" });
         this.mMainLayout.setLayoutParam("input_view", "align", { left: { target: 0, side: "right" }, bottom: "parent" });
-        this.mMainLayout.setLayoutParam(0, "margin", { top: this.window.statusBarHeight });
-        this.mMainLayout.setLayoutParam(1, "margin", { top: this.window.statusBarHeight });
-        this.mMainLayout.setLayoutParam(2, "margin", { bottom: 30 });
-        this.mMainLayout.setLayoutParam(3, "margin", { top: this.window.statusBarHeight });
+        this.mMainLayout.setLayoutParam("contactlv", "margin", { top: this.window.statusBarHeight });
+        this.mMainLayout.setLayoutParam("titleview", "margin", { top: this.window.statusBarHeight });
+        this.mMainLayout.setLayoutParam("chatlv", "margin", { bottom: 30 });
+        this.mMainLayout.setLayoutParam("msgtv", "margin", { top: this.window.statusBarHeight });
         this.window.addChild(this.mMainView);
     }
 

@@ -27,8 +27,9 @@ let URLS = getUrls({});
 
 // const cookiePath = path.join('/tmp', '.cookie.json');
 // const secretPath = path.join('/tmp', '.secret.json');
-const cookiePath = "/opt/data/share/LanyouWx.yunos.com/cookie.json";
-const secretPath = '/opt/data/share/LanyouWx.yunos.com/secret.json';
+const APPCATION_PATH = "/opt/data/share/LanyouWx.yunos.com/";
+const cookiePath = APPCATION_PATH + "cookie.json";
+const secretPath = APPCATION_PATH + "secret.json";
 // touch.sync(cookiePath);
 // const jar = new tough.CookieJar(new FileCookieStore(cookiePath));
 const jar = new tough.CookieJar();
@@ -101,6 +102,7 @@ class WxModule extends EventEmitter {
         } catch (e) {
             log.I("wltest", 'fetch uuid network error', e);
             // network error retry
+            this.emit("connectErro", "");
             return await this.fetchUUID();
         }
 
@@ -193,6 +195,7 @@ class WxModule extends EventEmitter {
             });
         } catch (e) {
             log.I("wltest", 'checkLoginStep network error', e);
+            this.emit("connectErro", "");
             await this.checkLoginStep();
             return;
         }
@@ -407,6 +410,8 @@ class WxModule extends EventEmitter {
         const selector = data.match(/selector:"(\d+)"/)[1];;
         if (retcode !== '0') {
             // this.runLoop();
+            this.init();
+            this.emit("restart", "");
             return;
         }
 
@@ -717,6 +722,7 @@ class WxModule extends EventEmitter {
 
     async init() {
         log.I("wltest", "init");
+        this.isGetRecentContacts = false;
         this.initConfig();
         try {
             this.uuid = await this.fetchUUID();
@@ -866,7 +872,7 @@ class WxModule extends EventEmitter {
         }).then((result) => {
             const { data } = result;
             callback = callback || (() => (null));
-            let path = "/opt/data/share/LanyouWx.yunos.com/" + "_" + name + ".jpg";
+            let path = APPCATION_PATH + "_" + name + ".jpg";
             fs.writeFile(path, data, "binary", function (err) {
                 if (err) {
                     callback(null);
