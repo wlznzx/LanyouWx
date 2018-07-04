@@ -14,7 +14,7 @@ const tough = require('tough-cookie');
 const EventEmitter = require('events');
 const Datastore = require('nedb');
 const Promise = require('bluebird');
-const getDao = require('./wx_dao');
+const WxDao = require('./wx_dao');
 const Contact = require("./Contact");
 const {
     getUrls,
@@ -51,11 +51,13 @@ const makeDeviceID = () => 'e' + Math.random().toFixed(15).toString().substring(
 
 var _loaderInstance;
 
+let TAG = "lanyouWx_module";
+
 class WxModule extends EventEmitter {
 
     static getInstance() {
         if (!_loaderInstance) {
-            log.I("wltest", 'new this');
+            log.I(TAG, 'new this');
             _loaderInstance = new this();
         }
         return _loaderInstance;
@@ -65,7 +67,7 @@ class WxModule extends EventEmitter {
         super();
         // this.mWxDao = new WxDao();
         // this.mWxDao.initDB();
-        this.mWxDao = getDao();
+        // this.mWxDao = getDao();
     }
 
     initConfig() {
@@ -84,6 +86,8 @@ class WxModule extends EventEmitter {
         this.deviceid = makeDeviceID();
         this.isReady = "false";
 
+        this.mWxDao = new WxDao();
+        this.mWxDao.initDB();
         clearTimeout(this.checkSyncTimer);
         clearInterval(this.updataContactTimer);
     }
@@ -100,7 +104,7 @@ class WxModule extends EventEmitter {
                 },
             });
         } catch (e) {
-            log.I("wltest", 'fetch uuid network error', e);
+            log.I(TAG, 'fetch uuid network error', e);
             // network error retry
             this.emit("connectErro", "");
             return await this.fetchUUID();
@@ -141,7 +145,7 @@ class WxModule extends EventEmitter {
         const qrcodeUrl = URLS.QRCODE_PATH + this.uuid;
         this.emit("qrcode", qrcodeUrl);
         qrcode.generate(qrcodeUrl.replace('/qrcode/', '/l/'), function (qrcode) {
-            // log.I("wltest",qrcode);
+            // log.I(TAG,qrcode);
         });
     }
 
@@ -161,7 +165,7 @@ class WxModule extends EventEmitter {
 		    method: 'GET',
 		    headers: request_info.headers
 		};
-  		log.I("wltest",params);
+  		log.I(TAG,params);
 	    let p = new Promise(function(resolve, reject){
 	        //做一些异步操作
 	        function _login(argument) {
@@ -194,7 +198,7 @@ class WxModule extends EventEmitter {
                 },
             });
         } catch (e) {
-            log.I("wltest", 'checkLoginStep network error', e);
+            log.I(TAG, 'checkLoginStep network error', e);
             this.emit("connectErro", "");
             await this.checkLoginStep();
             return;
@@ -211,7 +215,7 @@ class WxModule extends EventEmitter {
 
         switch (loginCode) {
             case 200:
-                log.I("wltest", '已点击确认登录!');
+                log.I(TAG, '已点击确认登录!');
                 this.redirectUri = data.match(/redirect_uri="(.+)";$/)[1] + '&fun=new';
                 this.baseHost = url.parse(this.redirectUri).host;
                 URLS = getUrls({ baseHost: this.baseHost });
@@ -219,16 +223,16 @@ class WxModule extends EventEmitter {
                 break;
 
             case 201:
-                log.I("wltest", '二维码已被扫描，请确认登录!');
+                log.I(TAG, '二维码已被扫描，请确认登录!');
                 this.emit("scaned", "");
                 break;
 
             case 408:
-                log.I("wltest", '检查登录超时，正在重试...');
+                log.I(TAG, '检查登录超时，正在重试...');
                 break;
 
             default:
-                log.I("wltest", '未知的状态，重试...');
+                log.I(TAG, '未知的状态，重试...');
         }
 
         return loginCode;
@@ -240,7 +244,7 @@ class WxModule extends EventEmitter {
         try {
             result = await req.get(this.redirectUri);
         } catch (e) {
-            log.I("wltest", 'fetch tickets network error', e);
+            log.I(TAG, 'fetch tickets network error', e);
             // network error, retry
             await this.fetchTickets();
             return;
@@ -264,7 +268,7 @@ class WxModule extends EventEmitter {
         this.sid = wxsidM && wxsidM[1];
         this.uin = wxuinM && wxuinM[1];
         this.passTicket = passTicketM && passTicketM[1];
-        log.I("wltest", `
+        log.I(TAG, `
       获得 skey -> ${this.skey}
       获得 sid -> ${this.sid}
       获得 uid -> ${this.uin}
@@ -278,6 +282,7 @@ class WxModule extends EventEmitter {
             DeviceID: this.deviceid,
         };
 
+        /*
         fs.writeFileSync(secretPath, JSON.stringify({
             skey: this.skey,
             sid: this.sid,
@@ -286,6 +291,7 @@ class WxModule extends EventEmitter {
             baseHost: this.baseHost,
             baseRequest: this.baseRequest,
         }), 'utf8');
+        */
     }
 
     async webwxinit() {
@@ -312,9 +318,7 @@ class WxModule extends EventEmitter {
             throw new Error('Init Webwx failed');
         }
 
-        log.I("wltest", "-------webwxinit-------");
-        log.I("wltest", data.StatusNotifyUserName);
-
+        log.I(TAG, "-------webwxinit-------");
         this.my = data.User;
         this.syncKey = data.SyncKey;
         this.chatSet = data.ChatSet;
@@ -339,15 +343,15 @@ class WxModule extends EventEmitter {
                 }
             );
         } catch (e) {
-            log.I("wltest", 'notify mobile network error', e);
+            log.I(TAG, 'notify mobile network error', e);
             // network error retry
             await this.notifyMobile();
             return;
         }
 
         const { data } = result;
-        log.I("wltest", "-------notifyMobile-------");
-        log.I("wltest", data);
+        log.I(TAG, "-------notifyMobile-------");
+        log.I(TAG, data);
 
         if (!data || !data.BaseResponse || data.BaseResponse.Ret !== 0) {
             throw new Error('通知客户端失败');
@@ -370,7 +374,7 @@ class WxModule extends EventEmitter {
                     },
                 });
             } catch (e) {
-                log.I("wltest", 'lookupSyncCheckHost network error', host);
+                log.I(TAG, 'lookupSyncCheckHost network error', host);
                 // network error retry
                 break;
             }
@@ -400,7 +404,7 @@ class WxModule extends EventEmitter {
                 }
             );
         } catch (e) {
-            log.I("wltest", 'synccheck network error', e);
+            log.I(TAG, 'synccheck network error', e);
             // network error retry
             return await this.syncCheck();
         }
@@ -425,6 +429,14 @@ class WxModule extends EventEmitter {
         }, 800);
     }
 
+    copyObj(obj) {
+        var newobj = {};
+        for (var attr in obj) {
+            newobj[attr] = obj[attr];
+        }
+        return newobj;
+    }
+
     async fetchContact() {
         let result;
         try {
@@ -438,7 +450,7 @@ class WxModule extends EventEmitter {
                 }
             );
         } catch (e) {
-            log.I("wltest", 'fetch contact network error', e);
+            log.I(TAG, 'fetch contact network error', e);
             // network error retry
             await this.fetchContact();
             return;
@@ -456,6 +468,7 @@ class WxModule extends EventEmitter {
         this.mWxDao.spCount = 0;
         this.mWxDao.groupCount = 0;
         this.mWxDao.friendCount = 0;
+        this.haveMySelt = false;
         data.MemberList.forEach((member) => {
             const userName = member.UserName;
 
@@ -473,17 +486,29 @@ class WxModule extends EventEmitter {
 
             if (userName.includes('@@')) {
                 this.mWxDao.groupCount += 1;
+                212
+
                 this.mWxDao.Groups.insert(member);
                 return;
             }
 
+            if (userName === this.my.UserName) this.haveMySelt = true;
             if (userName !== this.my.UserName) {
                 this.mWxDao.friendCount += 1;
                 this.mWxDao.Contacts.insert(member);
             }
         });
 
-        log.I("wltest", `
+        // log.I(TAG, "haveMySelt = " + haveMySelt);
+        if (!this.haveMySelt) {
+            log.I(TAG, "---------------------------------Add MySelf --------------------------------");
+            let myself = this.copyObj(data.MemberList[0]);
+            myself.UserName = this.my.UserName;
+            myself.NickName = this.my.NickName;
+            this.mWxDao.Members.insert(myself);
+        }
+
+        log.I(TAG, `
         获取通讯录成功
         全部成员数: ${this.mWxDao.totalMemberCount}
         公众帐号数: ${this.mWxDao.brandCount}
@@ -510,7 +535,7 @@ class WxModule extends EventEmitter {
                 }
             );
         } catch (e) {
-            log.I("wltest", 'webwxsync network error', e);
+            log.I(TAG, 'webwxsync network error', e);
             await this.webwxsync();
             return;
         }
@@ -522,9 +547,8 @@ class WxModule extends EventEmitter {
     }
 
     async handleMsg(msg) {
-        //   log.I("wltest","-----------------msg-------------------");
-        //   log.I("wltest",msg);
-
+        // log.I(TAG, "-----------------msg-------------------");
+        // log.I(TAG, msg);
         if (msg.MsgType == '3') {
             msg.Content = "圖片.";
         } else if (msg.MsgType != '1' && msg.Content != '') {
@@ -536,17 +560,15 @@ class WxModule extends EventEmitter {
             msg.GroupMember = await this.getGroupMember(userId, msg.FromUserName);
             msg.Group = await this.getGroup(msg.FromUserName);
             msg.Content = msg.Content.replace(/^(@[a-zA-Z0-9]+|[a-zA-Z0-9_-]+):<br\/>/, '');
-            // log.I("wltest",`
+            // log.I(TAG,`
             //   来自群 ${msg.Group.NickName} 的消息
             //   ${msg.GroupMember.DisplayName || msg.GroupMember.NickName}: ${msg.Content}
             // `);
             // await this.mWxDao.insertMsg({WithUserName: msg.FromUserName,IsReceive: true,MsgType: msg.MsgType,Content: msg.Content,CreateTime: msg.CreateTime,IsGroup: true,GroupMember: msg.GroupMember});
-            this.msgInsert({ WithUserName: msg.FromUserName, IsReceive: true, MsgType: msg.MsgType, Content: msg.Content, CreateTime: msg.CreateTime, IsGroup: true, GroupMember: msg.GroupMember });
+            this.msgInsert({ MsgId: msg.MsgId, WithUserName: msg.FromUserName, IsReceive: true, MsgType: msg.MsgType, Content: msg.Content, CreateTime: msg.CreateTime, IsGroup: true, GroupMember: msg.GroupMember });
             this.emit('group', msg);
             return;
         }
-
-
 
         if (msg.StatusNotifyUserName && !this.isGetRecentContacts) {
             this.chatSet = msg.StatusNotifyUserName;
@@ -556,22 +578,35 @@ class WxModule extends EventEmitter {
         }
 
         msg.Member = await this.getMember(msg.FromUserName);
+
+        // if (!msg.Member && msg.FromUserName === this.my.UserName) {
+        //     msg.Member = this.my;
+        // }
+
         if (!msg.Member) return;
-        // log.I("wltest",`
+        // log.I(TAG,`
         //   新消息
         //   ${msg.Member.RemarkName || msg.Member.NickName}: ${msg.Content}
         // `);
 
-        // 空消息，暂时不予理睬.
+        // 空消息，暂时不予理睬，MsgType == 51 ?
         if (msg.FromUserName == this.my.UserName && msg.Content == '') {
             return;
         }
 
+        let img_url = "";
+        if (msg.Url != '' && msg.Url.includes("apis.map.qq")) {
+            // 嗯，這應該是地理位置消息.
+            var msg_arr = msg.Content.toString().split(":<br/>");
+            msg.Content = msg_arr[0];
+            img_url = 'https://' + this.baseHost + msg_arr[1];
+        }
+
         if (msg.FromUserName != this.my.UserName) {
             //   await this.mWxDao.insertMsg({WithUserName: msg.FromUserName,IsReceive: true,MsgType: msg.MsgType,Content: msg.Content,CreateTime: msg.CreateTime,IsGroup: false,GroupMember: ''});
-            this.msgInsert({ WithUserName: msg.FromUserName, IsReceive: true, MsgType: msg.MsgType, Content: msg.Content, CreateTime: msg.CreateTime, IsGroup: false, GroupMember: '' });
+            this.msgInsert({ MsgId: msg.MsgId, WithUserName: msg.FromUserName, IsReceive: true, MsgType: msg.MsgType, Content: msg.Content, CreateTime: msg.CreateTime, IsGroup: false, GroupMember: '', Url: msg.Url, ImgUrl: img_url });
         } else {
-            this.msgInsert({ WithUserName: msg.ToUserName, IsReceive: false, MsgType: msg.MsgType, Content: msg.Content, CreateTime: msg.CreateTime, IsGroup: false, GroupMember: '' });
+            this.msgInsert({ MsgId: msg.MsgId, WithUserName: msg.ToUserName, IsReceive: false, MsgType: msg.MsgType, Content: msg.Content, CreateTime: msg.CreateTime, IsGroup: false, GroupMember: '', Url: msg.Url, ImgUrl: img_url });
         }
 
         this.emit('friend', msg);
@@ -594,7 +629,7 @@ class WxModule extends EventEmitter {
                 }
             );
         } catch (e) {
-            log.I("wltest", 'fetch batchgetcontact network error', e);
+            log.I(TAG, 'fetch batchgetcontact network error', e);
             // network error retry
             await this.fetchBatchgetContact(groupIds);
             return;
@@ -602,20 +637,20 @@ class WxModule extends EventEmitter {
 
         const { data } = result;
 
-        // log.I("wltest",'fetchBatchgetContact groupIds = ' + groupIds);
-        // log.I("wltest",result);
+        // log.I(TAG,'fetchBatchgetContact groupIds = ' + groupIds);
+        // log.I(TAG,result);
 
         if (!data || !data.BaseResponse || data.BaseResponse.Ret !== 0) {
             throw new Error('Fetch batchgetcontact fail');
         }
 
-        // log.I("wltest",'data\n');
-        // log.I("wltest",data);
+        // log.I(TAG,'data\n');
+        // log.I(TAG,data);
 
         data.ContactList.forEach((Group) => {
             this.mWxDao.Groups.insert(Group);
-            // log.I("wltest",`获取到群: ${Group.NickName}`);
-            // log.I("wltest",`群 ${Group.NickName} 成员数量: ${Group.MemberList.length}`);
+            // log.I(TAG,`获取到群: ${Group.NickName}`);
+            // log.I(TAG,`群 ${Group.NickName} 成员数量: ${Group.MemberList.length}`);
             const { MemberList } = Group;
             MemberList.forEach((member) => {
                 this.mWxDao.updateGroupMembers({
@@ -639,7 +674,7 @@ class WxModule extends EventEmitter {
         try {
             await this.fetchBatchgetContact([groupId]);
         } catch (e) {
-            log.I("wltest", 'fetchBatchgetContact error', e);
+            log.I(TAG, 'fetchBatchgetContact error', e);
             return null;
         }
         group = this.mWxDao.getGroup(groupId);
@@ -652,7 +687,7 @@ class WxModule extends EventEmitter {
         try {
             await this.fetchBatchgetContact([groupId]);
         } catch (e) {
-            log.I("wltest", 'fetchBatchgetContact error', e);
+            log.I(TAG, 'fetchBatchgetContact error', e);
             return null;
         }
         member = await this.mWxDao.getGroupMember(id);
@@ -665,12 +700,12 @@ class WxModule extends EventEmitter {
   	    try {
   	      this.uuid = await this.fetchUUID();
   	    } catch (e) {
-  	      log.I("wltest",'fetch uuid error', e);
+  	      log.I(TAG,'fetch uuid error', e);
   	      // this.init();
   	      return;
   	    }
       	this.showQRCODE();
-      	log.I("wltest",'请在手机端扫码绑定...');
+      	log.I(TAG,'请在手机端扫码绑定...');
 
       	// let login = await this.checkLoginStep();
   	    this.checkTimes = 0;
@@ -681,7 +716,7 @@ class WxModule extends EventEmitter {
   	      if (loginCode !== 201) this.checkTimes += 1;
 
   	      if (this.checkTimes > 6) {
-  	        log.I("wltest",'检查登录状态次数超出限制，重新获取二维码');
+  	        log.I(TAG,'检查登录状态次数超出限制，重新获取二维码');
   	        this.init();
   	        return;
   	      }
@@ -690,12 +725,12 @@ class WxModule extends EventEmitter {
 
   	    await this.webwxinit();
 
-  	    log.I("wltest",'初始化成功!');
+  	    log.I(TAG,'初始化成功!');
 
   	    try {
-  	      log.I("wltest",'正在通知客户端网页端已登录...');
+  	      log.I(TAG,'正在通知客户端网页端已登录...');
   	      await this.notifyMobile();
-  	      log.I("wltest",'正在获取通讯录列表...');
+  	      log.I(TAG,'正在获取通讯录列表...');
   	      await this.fetchContact();
   	    } catch (e) {
 
@@ -709,7 +744,7 @@ class WxModule extends EventEmitter {
     */
 
     async doRun() {
-        log.I("wltest", "doRun");
+        log.I(TAG, "doRun");
         if (fs.existsSync(secretPath)) {
             this.initConfig();
             const secret = JSON.parse(fs.readFileSync(secretPath, 'utf8'));
@@ -721,25 +756,25 @@ class WxModule extends EventEmitter {
     }
 
     async init() {
-        log.I("wltest", "init");
+        log.I(TAG, "init");
         this.isGetRecentContacts = false;
         this.initConfig();
         try {
             this.uuid = await this.fetchUUID();
         } catch (e) {
-            log.I("wltest", 'fetchUUID Error', e);
+            log.I(TAG, 'fetchUUID Error', e);
             this.init();
             return;
         }
 
         if (!this.uuid) {
-            log.I("wltest", '获取 uuid 失败，正在重试...');
+            log.I(TAG, '获取 uuid 失败，正在重试...');
             this.init();
             return;
         }
 
         this.showQRCODE();
-        log.I("wltest", '请在手机端扫码绑定...');
+        log.I(TAG, '请在手机端扫码绑定...');
 
         // const qrcodeUrl = URLS.QRCODE_PATH + this.uuid;
         // this.emit('qrcode', qrcodeUrl);
@@ -753,18 +788,18 @@ class WxModule extends EventEmitter {
             if (loginCode !== 201) this.checkTimes += 1;
 
             if (this.checkTimes > 6) {
-                log.I("wltest", '检查登录状态次数超出限制，重新获取二维码');
+                log.I(TAG, '检查登录状态次数超出限制，重新获取二维码');
                 this.init();
                 return;
             }
         }
 
         try {
-            log.I("wltest", '正在获取凭据...');
+            log.I(TAG, '正在获取凭据...');
             await this.fetchTickets();
-            log.I("wltest", '获取凭据成功!');
+            log.I(TAG, '获取凭据成功!');
         } catch (e) {
-            log.I("wltest", '鉴权失败，正在重新登录...', e);
+            log.I(TAG, '鉴权失败，正在重新登录...', e);
             this.init();
             return;
         }
@@ -772,37 +807,37 @@ class WxModule extends EventEmitter {
     }
 
     async loop() {
-        log.I("wltest", '正在初始化参数...');
+        log.I(TAG, '正在初始化参数...');
         try {
             await this.webwxinit();
         } catch (e) {
-            log.I("wltest", '登录信息已失效，正在重新获取二维码...');
+            log.I(TAG, '登录信息已失效，正在重新获取二维码...');
             this.init();
             return;
         }
 
-        log.I("wltest", '初始化成功!');
+        log.I(TAG, '初始化成功!');
 
         try {
-            // log.I("wltest",'正在通知客户端网页端已登录...');
+            // log.I(TAG,'正在通知客户端网页端已登录...');
             await this.notifyMobile();
 
-            log.I("wltest", '正在获取通讯录列表...');
+            log.I(TAG, '正在获取通讯录列表...');
             await this.fetchContact();
         } catch (e) {
-            log.I("wltest", '初始化信息失败，正在重试');
+            log.I(TAG, '初始化信息失败，正在重试');
             this.loop();
         }
 
-        // log.I("wltest",'通知成功!');
-        // log.I("wltest",'获取通讯录列表成功!');
+        // log.I(TAG,'通知成功!');
+        // log.I(TAG,'获取通讯录列表成功!');
 
         this.pushHost = await this.lookupSyncCheckHost();
 
         URLS = getUrls({ baseHost: this.baseHost, pushHost: this.pushHost });
 
 
-        log.I("wltest", '循环读取信息......');
+        log.I(TAG, '循环读取信息......');
 
         this.syncCheck();
         this.isReady = true;
@@ -814,9 +849,9 @@ class WxModule extends EventEmitter {
     }
 
     msgInsert(info) {
-        log.I("wltest", 'MsgInsert.');
+        log.I(TAG, 'MsgInsert.');
         this.mWxDao.insertMsg(info).then((ret) => {
-            log.I("wltest", 'emit msg....');
+            log.I(TAG, 'emit msg....');
             this.emit("msg", info);
         });
     }
@@ -839,6 +874,8 @@ class WxModule extends EventEmitter {
             },
         }).then((result) => {
             const { data } = result;
+            log.D(TAG, "-----result----");
+            log.D(TAG, result);
             callback = callback || (() => (null));
             if (!data || !data.BaseResponse || data.BaseResponse.Ret !== 0) {
                 return callback(new Error('Send text fail'));
@@ -853,9 +890,13 @@ class WxModule extends EventEmitter {
     }
 
     getHeadimg(name, callback) {
+        let _url = URLS.API_webwxgeticon;
+        if (name.includes('@@')) {
+            _url = URLS.API_webwxgetheadimg;
+        }
         req.request({
-            // url: URLS.API_webwxgeticon,
-            url: URLS.API_webwxgetheadimg,
+            url: _url,
+            // url: URLS.API_webwxgetheadimg,
             method: 'get',
             responseType: 'arraybuffer',
             headers: {
@@ -885,6 +926,39 @@ class WxModule extends EventEmitter {
         });
     }
 
+    getImg(pUrl, uniqueID, callback) {
+        req.request({
+            // url: URLS.API_webwxgeticon,
+            url: pUrl,
+            method: 'get',
+            responseType: 'arraybuffer',
+            headers: {
+                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+                'Accept-Encoding': 'gzip, deflate, br',
+                'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_2) ' +
+                    'AppleWebKit/537.36 (KHTML, like Gecko) Chrome/50.0.2652.0 Safari/537.36',
+            },
+            // params: {
+            //     seq: +new Date,
+            //     username: name,
+            //     skey: this.skey,
+            // }
+        }).then((result) => {
+            const { data } = result;
+            callback = callback || (() => (null));
+            let path = APPCATION_PATH + "_" + uniqueID + ".jpg";
+            fs.writeFile(path, data, "binary", function (err) {
+                if (err) {
+                    callback(null);
+                } else {
+                    callback(path);
+                }
+            });
+        }).catch((e) => {
+            return;
+        });
+    }
+
     isLooped() {
         return this.isReady;
     }
@@ -895,13 +969,14 @@ class WxModule extends EventEmitter {
         function startsWith(searchString, starts) {
             return searchString.indexOf(starts, 0) === 0;
         }
-        log.I("wltest", "getRecentContacts _chatArr.length = " + _chatArr.length);
+        log.I(TAG, "getRecentContacts _chatArr.length = " + _chatArr.length);
         var i = _chatArr.length;
         while (i--) {
             if (!startsWith(_chatArr[i].toString(), "@")) {
                 _chatArr.splice(i, 1);
             }
         }
+        // _chatArr.add(this.my.UserName);
         let contacts = new Array();
         for (var i = 0; i < _chatArr.length; i++) {
 
@@ -922,6 +997,17 @@ class WxModule extends EventEmitter {
                 }
                 contacts.push(contact);
             }
+        }
+
+        if(!this.haveMySelt){
+            let myself = new Contact();
+            myself.setUserName(this.my.UserName);
+            if (this.my.RemarkName !== '') {
+                myself.setName(this.my.RemarkName);
+            } else {
+                myself.setName(this.my.NickName);
+            }
+            contacts.push(myself);
         }
         return contacts;
     }

@@ -229,6 +229,7 @@ class Main extends Page {
             new PopupMenu.PopupMenuItem("新手指南"),
             new PopupMenu.PopupMenuItem("登出")
         ];
+
         for (let item of items) {
             this.optionsMenu.addChild(item);
         }
@@ -270,6 +271,16 @@ class Main extends Page {
         this.mChatLV.id = "chatlv";
         this.mChatLV.width = width - this.mContactLV.width;
         this.mChatLV.height = height - 60;
+        this.mChatLV.dividerHeight = 20;
+        this.mChatLV.on("itemselect", function (itemView, position) {
+            if (itemView.Url) {
+                var PageLink = require("yunos/page/PageLink");
+                let link = new PageLink("page://browser.yunos.com/browser");
+                let data = { url: itemView.Url };
+                link.data = JSON.stringify(data);
+                Page.getInstance().sendLink(link);
+            }
+        });
 
         // 消息栏
         this.mMsgTextView = new TextView();
@@ -281,6 +292,7 @@ class Main extends Page {
         this.mMsgTextView.text = "";
         this.mMsgTextView.fontSize = "12sp";
         this.mMsgTextView.verticalAlign = TextView.VerticalAlign.Middle;
+        this.mMsgTextView.elideMode = TextView.ElideMode.ElideRight;
 
         this.loading = new Loading();
         this.loading.id = "loading";
@@ -332,6 +344,7 @@ class Main extends Page {
             this.textInuputMenu.addChild(item);
         }
         this.textInuputMenu.on("result", (index) => {
+            log.D(TAG, "this.ChatWithUserName = " + this.ChatWithUserName);
             if (this.ChatWithUserName) {
                 this.mWxModule.sendText(this.ChatWithUserName, this.defaultMsg[index]);
             }

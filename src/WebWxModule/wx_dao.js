@@ -73,4 +73,4 @@ function getInstance() {
     return singleton;
 }
 
-module.exports = getInstance;
+module.exports = WxDao;

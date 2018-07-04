@@ -21,7 +21,8 @@
             "uri": "page://LanyouWx.yunos.com/Main",
             "content_path": "src/Main.js",
             "main": true,
-            "icon": "res/default/images/icon.png"
+            "icon": "res/default/images/icon.png",
+            "splash": "none"
         },
         {
             "uri": "page://LanyouWx.yunos.com/ChatPage",

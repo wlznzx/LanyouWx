@@ -96,7 +96,17 @@ class ChatPage extends Page {
         this.mMainView.addChild(this.mContactLV); // 0
         this.mMainView.addChild(this.mTitleView); // 1
         this.mMainView.addChild(this.mChatLV); // 2
-        this.mMainView.addChild(imageview);
+
+        this.mChatLV.on("itemselect", function (itemView, position) {
+            if (itemView.Url) {
+                var PageLink = require("yunos/page/PageLink");
+                let link = new PageLink("page://browser.yunos.com/browser");
+                let data = { url: itemView.Url };
+                link.data = JSON.stringify(data);
+                Page.getInstance().sendLink(link);
+            }
+        });
+        // this.mMainView.addChild(imageview);
         this.mMainLayout.setLayoutParam(0, "align", { left: "parent", top: "parent" });
         this.mMainLayout.setLayoutParam(1, "align", { left: { target: 0, side: "right" }, top: "parent" });
         this.mMainLayout.setLayoutParam(2, "align", { left: { target: 0, side: "right" }, top: { target: 1, side: "bottom" } });
@@ -118,15 +128,13 @@ class ChatPage extends Page {
         adapter.data = Data;
         this.mContactLV.adapter = adapter;
 
-        var data2 = [];
-        for (let i = 0; i < 10; i++) {
-            data2[i] = "I am " + i;
-        }
+
         var chatAdapter = new ChatAdapter();
         this.mChatLV.adapter = chatAdapter;
         this.mChatLV.arriveAt(19);
         chatAdapter.data = this.getMsgList("@xxxxsdfafas");
         this.mChatLV.arriveAt(19);
+        this.mChatLV.dividerHeight = 20;
         let isLooped = this.mWxModule.isLooped();
         log.I(TAG, "mWxModule.isLooped() = " + isLooped);
         // if (isReady) {
@@ -157,10 +165,15 @@ class ChatPage extends Page {
             _msg.WithUserName = "@8a7d01877cc8f2d6ec9ebb608c630b810dbd2c9c7a754ba22257a59d49e69cfc";
             _msg.IsReceive = true;
             _msg.MsgType = "@8a7d01877cc8f2d6ec9ebb608c630b810dbd2c9c7a754ba22257a59d49e69cfc";
-            _msg.Content = "4 " + i;
+            _msg.Content = "。。。。。。。。。。。。。。。。。。。。。。。。。。。。。。。。。。。。。。。。。。。。。。" +
+                "。。。。。。。。。。。。。。。。。。。。。。。。。。。。。。。。。。。。。。。。。。。。。。。。。。。。。。。" +
+                "。。。。。。。。。。。。。。。。。。。。。。。。。。。。。。。。。。。。。。。。。。。。。。。。。。。。。。。" +
+                "。。。。。。。。。。。。。。。。。。。。。。。。。。。。。。。。。。。。。。。。。。。。。。。。。。。。。。。。。" +
+                "。。。。。。。。。。。。。。。。。。。。。。。。。。。。。。。。。。。。。。。。" + i;
             _msg.CreateTime = "1530339945";
             _msg.IsGroup = false;
             _msg.GroupMember = "";
+            _msg.Url = "http://apis.map.qq.com/uri/v1/geocoder?coord=22.540672,114.093910";
             _msg._id = "I5WMj3rt4nNW70mb";
             this.chatList.push(_msg);
         }
