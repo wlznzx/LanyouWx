@@ -40,6 +40,9 @@ class ChatPage extends Page {
         let width = this.window.width;
         let height = this.window.height;
 
+        log.D(TAG, "width = " + width);
+        log.D(TAG, "height = " + height);
+
         this.mMainView = new CompositeView();
         this.mMainLayout = new RelativeLayout();
         this.mMainView.layout = this.mMainLayout;
@@ -135,8 +138,6 @@ class ChatPage extends Page {
         chatAdapter.data = this.getMsgList("@xxxxsdfafas");
         this.mChatLV.arriveAt(19);
         this.mChatLV.dividerHeight = 20;
-        let isLooped = this.mWxModule.isLooped();
-        log.I(TAG, "mWxModule.isLooped() = " + isLooped);
         // if (isReady) {
         //     mWxModule.getRecentContacts().then((result) => {
         //         log.I(TAG , result);

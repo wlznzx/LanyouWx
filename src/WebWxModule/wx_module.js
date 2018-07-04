@@ -351,7 +351,6 @@ class WxModule extends EventEmitter {
 
         const { data } = result;
         log.I(TAG, "-------notifyMobile-------");
-        log.I(TAG, data);
 
         if (!data || !data.BaseResponse || data.BaseResponse.Ret !== 0) {
             throw new Error('通知客户端失败');
@@ -486,8 +485,6 @@ class WxModule extends EventEmitter {
 
             if (userName.includes('@@')) {
                 this.mWxDao.groupCount += 1;
-                212
-
                 this.mWxDao.Groups.insert(member);
                 return;
             }
@@ -849,9 +846,8 @@ class WxModule extends EventEmitter {
     }
 
     msgInsert(info) {
-        log.I(TAG, 'MsgInsert.');
         this.mWxDao.insertMsg(info).then((ret) => {
-            log.I(TAG, 'emit msg....');
+            log.D(TAG, "InsertMsg...");
             this.emit("msg", info);
         });
     }
@@ -874,8 +870,6 @@ class WxModule extends EventEmitter {
             },
         }).then((result) => {
             const { data } = result;
-            log.D(TAG, "-----result----");
-            log.D(TAG, result);
             callback = callback || (() => (null));
             if (!data || !data.BaseResponse || data.BaseResponse.Ret !== 0) {
                 return callback(new Error('Send text fail'));

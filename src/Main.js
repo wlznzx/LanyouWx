@@ -24,7 +24,7 @@ const Button = require("yunos/ui/widget/Button");
 const ImageButton = require("yunos/ui/widget/ImageButton");
 const RowLayout = require("yunos/ui/layout/RowLayout");
 const resource = require("yunos/content/resource/Resource").getInstance();
-
+const Contants = require("./Contants");
 
 const TAG = "WebWx_Main";
 
@@ -114,7 +114,7 @@ class Main extends Page {
             if (this.ChatWithUserName && msg.WithUserName === this.ChatWithUserName) {
                 this.refreshMsgPart(this.ChatWithUserName);
             }
-            this.refreshContactPart(msg.WithUserName);
+            this.refreshContactPart(msg.WithUserName, msg.IsReceive);
         });
 
         this.mWxModule.on("qrcode", (url) => {
@@ -172,8 +172,6 @@ class Main extends Page {
     }
 
     initView() {
-        // this.mWxModule = require("./WebWxModule/wx_module").getInstance();
-        this.mWxModule = RequireRouter.getRequire("./WebWxModule/wx_module").getInstance();
         let width = this.window.width;
         let height = this.window.height;
 
@@ -186,7 +184,7 @@ class Main extends Page {
         // 左侧最近联系人栏.
         this.mContactLV = new ListView();
         this.mContactLV.id = "contactlv";
-        this.mContactLV.width = width / 3;
+        this.mContactLV.width = width / 4;
         this.mContactLV.height = height;
 
         this.mContactLV.on("itemselect", this.onContactLvSelect);
@@ -301,7 +299,7 @@ class Main extends Page {
         // 右下侧输入栏
         this.inputView = new CompositeView();
         this.inputView.id = "input_view";
-        this.inputView.height = 30;
+        this.inputView.height = Contants.INPUT_BAR_HEIGHT;
         this.inputView.width = this.mChatLV.width;
         let inputLayout = new RowLayout();
         inputLayout.spacing = 0;
@@ -332,7 +330,7 @@ class Main extends Page {
             this.textInuputMenu.show(left, top);
         });
 
-        this.defaultMsg = ["你好！", "我正在開車呢，稍後給您回電話.", "[微笑]"];
+        this.defaultMsg = ["好的，我知道了.", "我正在開車呢，稍後給您回電話.", "[微笑]"];
         this.textInuputMenu = new PopupMenu();
         this.textInuputMenu.width = textInputBtn.width;
         let textInputItems = [
@@ -371,7 +369,7 @@ class Main extends Page {
         this.mMainLayout.setLayoutParam("input_view", "align", { left: { target: 0, side: "right" }, bottom: "parent" });
         this.mMainLayout.setLayoutParam("contactlv", "margin", { top: this.window.statusBarHeight });
         this.mMainLayout.setLayoutParam("titleview", "margin", { top: this.window.statusBarHeight });
-        this.mMainLayout.setLayoutParam("chatlv", "margin", { bottom: 30 });
+        this.mMainLayout.setLayoutParam("chatlv", "margin", { top: 10,bottom: Contants.INPUT_BAR_HEIGHT });
         this.mMainLayout.setLayoutParam("msgtv", "margin", { top: this.window.statusBarHeight });
         this.window.addChild(this.mMainView);
     }
@@ -421,7 +419,7 @@ class Main extends Page {
 
 
     // 更新....
-    refreshContactPart(WithUserName) {
+    refreshContactPart(WithUserName, pIsReceive) {
         if (!this.isLopped) return;
         let index;
         for (let i = 0; i < this.mContactLV.ContactsList.length; i++) {
@@ -433,7 +431,7 @@ class Main extends Page {
         log.D(TAG, "refreshContactPart index = " + index);
         if (index) {
             let _contact = this.mContactLV.ContactsList.splice(index, 1);
-            _contact[0].hasNewMsg = true;
+            if (pIsReceive) _contact[0].hasNewMsg = true;
             this.mContactLV.ContactsList.unshift(_contact[0]);
             this.mContactAdapter.data = this.mContactLV.ContactsList;
             this.mContactAdapter.onDataChange();
