@@ -1,4 +1,5 @@
-<CompositeView width="{dp(360)}" height="{dp(640)}" layout="{layout.container}" background="#6ae119">
+
+<CompositeView id ="login" width="{dp(360)}" height="{dp(640)}" layout="{layout.container}" >
 
     <CompositeView id="MainLayout" width="{dp(320)}" height="{dp(400)}" layout="{layout.column}">
 
@@ -17,15 +18,20 @@
                 height="{dp(320)}"
                 align="{enum.TextView.Align.Center}"
                 />
+        <RichTextView
+            id ="rt"
+            color="#ffffff"
+            />
 
         <TextView
                 id="TipsTV"
-                text="请扫码登录.."
+                text="请扫码登录"
                 align="{enum.TextView.Align.Center}"
                 fontSize="22sp"
-                height="{dp(40)}"
+                height="{dp(20)}"
                 color="#ffffff"
                 />
+
 
     </CompositeView>
 

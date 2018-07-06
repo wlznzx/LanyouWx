@@ -18,5 +18,30 @@
         "attrs": {
             "spacing": "{dp(20)}"
         }
+    },
+    "myTeachPage":{
+        "type":"RelativeLayout",
+        "params":{
+            "title":{
+                "align":{"center": "parent","top": "parent"},
+                "margin":{"top": "{dp(100)}"}
+            },
+            "ct1":{
+                "align":{"left": {"target": "title","side": "left"},"top" :{"target": "title","side": "bottom"}},
+                "margin":{"left": "{dp(-50)}","top": "{dp(20)}"}
+            },
+            "ct2":{
+                "align":{"left": {"target": "ct1","side": "left"},"top": {"target": "ct1","side": "bottom"}},
+                "margin":{"left": "{dp(0)}","top": "{dp(10)}"}
+            },
+            "ct3":{
+                "align":{"left": {"target": "ct2","side": "left"},"top": {"target": "ct2","side": "bottom"}},
+                "margin":{"left": "{dp(0)}","top": "{dp(10)}"}
+            },
+            "bt":{
+                "align":{"left": {"target": "ct3","side": "left"},"top": {"target": "ct3","side": "bottom"}},
+                "margin": {"left": "{dp(80)}","top": "{dp(40)}"}
+            }
+        }
     }
 }

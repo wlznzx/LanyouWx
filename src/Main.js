@@ -19,6 +19,7 @@ const ChatAdapter = require("./adapter/ChatAdapter");
 const ContactAdapter = require("./adapter/ContactAdapter");
 const AlertDialog = require("yunos/ui/widget/AlertDialog");
 const Loading = require("yunos/ui/widget/Loading");
+const Switch = require("yunos/ui/widget/Switch");
 const PopupMenu = require("yunos/ui/widget/PopupMenu");
 const Button = require("yunos/ui/widget/Button");
 const ImageButton = require("yunos/ui/widget/ImageButton");
@@ -26,7 +27,8 @@ const RowLayout = require("yunos/ui/layout/RowLayout");
 const resource = require("yunos/content/resource/Resource").getInstance();
 const Contants = require("./Contants");
 const MediaPlayer = require("yunos/multimedia/MediaPlayer");
-
+const MyPopupMenuItem = require("./MyPopupMenuItem");
+const PageLink = require("yunos/page/PageLink");
 const TAG = "WebWx_Main";
 
 class Main extends Page {
@@ -78,6 +80,20 @@ class Main extends Page {
             this.QRCodeIV = rootView.findViewById("QRCodeIv");
             this.QRCodeIV.scaleType = ImageView.ScaleType.Center;
             this.TipsTV = rootView.findViewById("TipsTV");
+
+            //扫码页面背景显示
+            let loginView = rootView.findViewById("login");
+            let bkground = resource.getImageSrc("background.png");
+            loginView.background = bkground;
+
+
+
+            //富文本控件内容设置
+            let richTextView = rootView.findViewById("rt");
+            let logo = resource.getImageSrc("logo.png");
+            //richTextView.marginright = "200dp";
+            //richTextView.paddingLeft = "20dp";
+            richTextView.text = "<img src=\"" + logo + "\" width=\"30\" height=\"30\" >   联友温馨提示!";
         });
     }
 
@@ -194,17 +210,17 @@ class Main extends Page {
         // 右上侧菜单按钮
         let optionsBtn = new ImageButton();
         optionsBtn.styleType = ImageButton.StyleType.Block;
-        optionsBtn.multiState = {
-            focused: {
-                background: "#FFFFFF",
-                opacity: 0
-            },
-            pressed: {
-                background: "#FFFFFF",
-                opacity: 0
-            }
-        };
-        optionsBtn.src = resource.getImageSrc("/images/setting.png");
+ //       optionsBtn.multiState = {
+ //           focused: {
+ //              background: "#FFFFFF",
+ //               opacity: 0
+ //           },
+ //           pressed: {
+ //               background: "#FFFFFF",
+  //              opacity: 0
+ //           }
+ //       };
+        optionsBtn.src = resource.getImageSrc("setting.png");
 
         optionsBtn.height = 30;
         optionsBtn.width = 30;
@@ -223,8 +239,9 @@ class Main extends Page {
         });
 
         this.optionsMenu = new PopupMenu();
+        this.optionsMenu.width = 300;
         let items = [
-            new PopupMenu.PopupMenuItem("自动播报"),
+            new MyPopupMenuItem("自动播报"),
             new PopupMenu.PopupMenuItem("新手指南"),
             new PopupMenu.PopupMenuItem("登出")
         ];
@@ -233,8 +250,22 @@ class Main extends Page {
             this.optionsMenu.addChild(item);
         }
         this.optionsMenu.on("result", (index) => {
-            //通过index跳转实现不同的界面与功能。
-        });
+                switch (index) {
+                    case 0:
+                        //    this.optionsMenu.children[0].setSwitch();
+                        break;
+                    case 1:
+                        let link = new PageLink("page://LanyouWx.yunos.com/TeachPage");
+                        Page.getInstance().sendLink(link);
+                        break;
+                    default:
+ //                       this.window.removeAllChildren();
+ //                       this.initLoadingView();
+                        break;
+                }
+            }
+
+        );
 
         // 右上侧对话框.
         this.mTitleView = new CompositeView();
@@ -429,7 +460,6 @@ class Main extends Page {
 
     onChatLvSelect(itemView, position) {
         if (itemView.Url) {
-            var PageLink = require("yunos/page/PageLink");
             let link = new PageLink("page://browser.yunos.com/browser");
             let data = { url: itemView.Url };
             link.data = JSON.stringify(data);

@@ -1,0 +1,36 @@
+<CompositeView width="{dp(640)}" height="{dp(620)}" layout="{layout.myTeachPage}">
+    <TextView
+        id = "title"
+        width = "{dp(60)}"
+        height = "{dp(40)}"
+        fontSize = "30sp"
+        text = "新手指南"
+
+    />
+    <TextView
+        id = "ct1"
+        width = "{dp(60)}"
+        height = "{dp(40)}"
+        fontSize = "18sp"
+        text = "1.微信消息点击按钮便捷进行回复"
+    />
+    <TextView
+        id = "ct2"
+        width = "{dp(60)}"
+        height = "{dp(40)}"
+        fontSize = "18sp"
+        text = "2.发送地图消息在微信中直接进行导航"
+    />
+    <TextView
+        id = "ct3"
+        width = "{dp(60)}"
+        height = "{dp(40)}"
+        fontSize = "18sp"
+        text = "3.发送语音消息和好友快捷进行聊天"
+    />
+    <Button
+        id = "bt"
+        sizeType = "{enum.Button.SizeType.Normal}"
+        text = "退出"
+    />
+</CompositeView>

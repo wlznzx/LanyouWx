@@ -35,6 +35,12 @@
             "content_path": "src/ChatPage.js",
             "main": false,
             "icon": "res/default/images/icon.png"
+        },
+        {
+            "uri": "page://LanyouWx.yunos.com/TeachPage",
+            "content_path": "src/TeachPage.js",
+            "main": false,
+            "icon": "res/default/images/icon.png"
         }
     ]
 }
