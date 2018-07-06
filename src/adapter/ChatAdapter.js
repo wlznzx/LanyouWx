@@ -9,6 +9,7 @@ const CompositeView = require("yunos/ui/view/CompositeView");
 const RelativeLayout = require("yunos/ui/layout/RelativeLayout");
 const resource = require("yunos/content/resource/Resource").getInstance();
 const TextView = require("yunos/ui/view/TextView");
+const SpriteView = require("yunos/ui/view/SpriteView");
 const screen = require("yunos/device/Screen").getInstance();
 var imageLoader = require("yunos/util/ImageLoader").getInstance();
 
@@ -24,8 +25,9 @@ class ChatAdapter extends BaseAdapter {
     }
 
     createItem(position, convertView) {
-        // log.I("TAG", "ChatAdapter position = " + position);
-        if (this.data[position].Url) {
+        if (this.data[position].MsgType == "34") {
+            convertView = this.buildVoiceMsgLayout(position);
+        } else if (this.data[position].Url) {
             convertView = this.buildLocationMsgLayout(position);
         } else {
             convertView = this.buildMsgLayout(position);
@@ -195,6 +197,110 @@ class ChatAdapter extends BaseAdapter {
         log.D(TAG, this.data[position]);
         return ret;
     }
+
+    buildVoiceMsgLayout(position) {
+        let ret = new CompositeView();
+        let layout = new RelativeLayout();
+        ret.layout = layout;
+        var avatarIv = new ImageView();
+        var ivSize = 40;
+        avatarIv.id = "avatar";
+        avatarIv.width = ivSize;
+        avatarIv.height = ivSize;
+        avatarIv.scaleType = ImageView.ScaleType.Fitxy;
+        ret.addChild(avatarIv);
+
+        const animationView = new SpriteView();
+        animationView.id = "anim_view";
+        // 指定控件大小
+        animationView.width = 25;
+        animationView.height = 25;
+        // 设置控件Sprite图片
+        animationView.src = resource.getImageSrc("./images/voice.png");
+        // 设置每帧展示的图片大小
+        animationView.frameWidth = 25;
+        animationView.frameHeight = 25;
+        // 设置单帧持续时间，单位是ms
+        animationView.frameDuration = 150;
+        // 设置执行总帧数
+        animationView.frameCount = 3;
+
+        let Lmin = 50;
+        let Lmax = 300;
+        let barLen = 0;
+        let barCanChangeLen = Lmax - Lmin;
+        let VoicePlayTimes = this.data[position].VoiceLength / 1000;
+        if (VoicePlayTimes < 11) {
+            barLen = Lmin + VoicePlayTimes * 0.05 * barCanChangeLen; // VoicePlayTimes 为10秒时，正好为可变长度的一半
+        } else {
+            barLen = Lmin + 0.5 * barCanChangeLen + (VoicePlayTimes - 10) * 0.01 * barCanChangeLen;
+        }
+
+        log.D(TAG, "barLen = " + barLen);
+
+        let bgView = new View();
+        bgView.id = "bg_view";
+        bgView.width = Math.floor(barLen);
+        bgView.height = ivSize;
+        bgView.background = "white";
+        bgView.borderColor = "black"; // 设置边框颜色为蓝色
+        bgView.borderWidth = 1; // 设置边框宽度为4像素；
+        bgView.borderRadius = 5; // 设置边框为半径为20像素的圆角矩形；
+        bgView.opacity = 1; // 设置 View 的透明度；
+
+
+        let voiceLenghtTv = new TextView();
+        voiceLenghtTv.id = "voice_lenght_tv";
+        voiceLenghtTv.width = 20;
+        voiceLenghtTv.height = 15;
+        voiceLenghtTv.fontSize = "10sp";
+        voiceLenghtTv.Color = "gray";
+        voiceLenghtTv.text = VoicePlayTimes + "''";
+
+        ret.addChild(bgView);
+        ret.addChild(animationView);
+        ret.addChild(voiceLenghtTv);
+
+
+        if (!this.data[position].IsReceive) {
+            layout.setLayoutParam("avatar", "align", { right: "parent" });
+            layout.setLayoutParam("anim_view", "align", { right: { target: "avatar", side: "left" }, middle: "parent" });
+            layout.setLayoutParam("bg_view", "align", { right: { target: "avatar", side: "left" }, middle: "parent" });
+            layout.setLayoutParam("avatar", "margin", { right: screen.getPixelByDp(30) });
+            layout.setLayoutParam("anim_view", "margin", { right: screen.getPixelByDp(15) });
+        } else {
+            layout.setLayoutParam("avatar", "align", { left: "parent" });
+            layout.setLayoutParam("anim_view", "align", { left: { target: "avatar", side: "right" }, middle: "parent" });
+            layout.setLayoutParam("bg_view", "align", { left: { target: "avatar", side: "right" }, middle: "parent" });
+            layout.setLayoutParam("voice_lenght_tv", "align", { left: { target: "bg_view", side: "right" }, middle: "parent" });
+            layout.setLayoutParam("avatar", "margin", { left: screen.getPixelByDp(30) });
+            layout.setLayoutParam("anim_view", "margin", { left: screen.getPixelByDp(30) });
+            layout.setLayoutParam("bg_view", "margin", { left: screen.getPixelByDp(15) });
+            layout.setLayoutParam("voice_lenght_tv", "margin", { left: screen.getPixelByDp(10) });
+        }
+
+        ret.height = ivSize;
+        ret.width = bgView.width + 60;
+
+        let _path = IMG_PATH + "_" + this.data[position].WithUserName + ".jpg";
+        if (fs.existsSync(_path)) {
+            imageLoader.displayImage(avatarIv, _path);
+        } else if (this.mWxModule) {
+            this.mWxModule.getHeadimg(this.data[position].WithUserName, (path) => {
+                imageLoader.displayImage(avatarIv, path);
+            });
+        } else {
+            avatarIv.src = resource.getImageSrc("images/em_default_avatar.png");
+        }
+
+        let msgInfo = new Object();
+        msgInfo.MsgId = this.data[position].MsgId;
+        msgInfo.VoiceLength = this.data[position].VoiceLength
+        ret.animationView = animationView;
+        ret.msgInfo = msgInfo;
+        return ret;
+    }
+
 }
 
 module.exports = ChatAdapter;

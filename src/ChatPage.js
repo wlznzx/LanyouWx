@@ -4,6 +4,7 @@ const Page = require("yunos/page/Page");
 const BaseAdapter = require("yunos/ui/adapter/BaseAdapter");
 const ListView = require("yunos/ui/view/ListView");
 const ImageView = require("yunos/ui/view/ImageView");
+const SpriteView = require("yunos/ui/view/SpriteView");
 const View = require("yunos/ui/view/View");
 const CompositeView = require("yunos/ui/view/CompositeView");
 const resource = require("yunos/content/resource/Resource").getInstance();
@@ -19,6 +20,7 @@ const MsgInfo = require("./WebWxModule/MsgInfo");
 
 const Image = require("yunos/multimedia/Image");
 const Bitmap = require("yunos/graphics/Bitmap");
+const MediaPlayer = require("yunos/multimedia/MediaPlayer");
 
 const TAG = "WebWx_ChatPage";
 
@@ -94,12 +96,22 @@ class ChatPage extends Page {
         imageview.id = "iiiv";
         imageview.src = bitmap2;
 
-
-
         this.mMainView.addChild(this.mContactLV); // 0
         this.mMainView.addChild(this.mTitleView); // 1
         this.mMainView.addChild(this.mChatLV); // 2
 
+/*
+        const spriteView = new SpriteView();
+        spriteView.width = 50;
+        spriteView.height = 50;
+        spriteView.src = resource.getImageSrc("./images/voice.png");
+        spriteView.frameWidth = 25;
+        spriteView.frameHeight = 25;
+        spriteView.frameDuration = 150;
+        spriteView.frameCount = 3;
+        this.mMainView.addChild(spriteView);
+        spriteView.start();
+*/
         this.mChatLV.on("itemselect", function (itemView, position) {
             if (itemView.Url) {
                 var PageLink = require("yunos/page/PageLink");
@@ -113,6 +125,7 @@ class ChatPage extends Page {
         this.mMainLayout.setLayoutParam(0, "align", { left: "parent", top: "parent" });
         this.mMainLayout.setLayoutParam(1, "align", { left: { target: 0, side: "right" }, top: "parent" });
         this.mMainLayout.setLayoutParam(2, "align", { left: { target: 0, side: "right" }, top: { target: 1, side: "bottom" } });
+        this.mMainLayout.setLayoutParam(3, "align", { center: "parent", middle: "parent" });
         this.mMainLayout.setLayoutParam("iiiv", "align", { center: "parent", middle: "parent" });
         this.mMainLayout.setLayoutParam(0, "margin", { top: this.window.statusBarHeight });
         this.mMainLayout.setLayoutParam(1, "margin", { top: this.window.statusBarHeight });
@@ -152,7 +165,48 @@ class ChatPage extends Page {
         // });
         //
 
+        this.sMediaPlayer = new MediaPlayer(MediaPlayer.PlayerType.LOWPOWERAUDIO);
+        this.playVoice("/opt/data/share/LanyouWx.yunos.com/_8690156483247251196.mp3");
+        // this.playVoice("/usr/bin/ut/res/audio/sp.mp3");
+        this.sMediaPlayer.on("prepared", function (result) {
+            log.D(TAG, "MediaPlayer prepared.");
+            // this.sMediaPlayer.start();
+        });
 
+        this.sMediaPlayer.on("playbackcomplete", function () {
+            // 播放完成
+            log.D(TAG, "MediaPlayer playbackcomplete.");
+            if (this.sMediaPlayer) {
+                this.sMediaPlayer.reset();
+            }
+            if (this.playingAnimView) {
+                this.playingAnimView.stop();
+            }
+        });
+
+        this.sMediaPlayer.on("started", function () {
+            // 已开始播放
+            log.D(TAG, "MediaPlayer started.");
+        });
+
+        this.sMediaPlayer.on("error", function (errorCode) {
+            // 发生了错误，可以根据具体的错误码进行相应的处理
+            log.D(TAG, "MediaPlayer error.");
+        });
+    }
+
+    playVoice(path) {
+        if (!this.sMediaPlayer) {
+            return;
+        }
+        log.E(TAG, "playVoice path = " + path);
+        // try {
+            this.sMediaPlayer.setURISource(path);
+            this.sMediaPlayer.prepareSync();
+            this.sMediaPlayer.start();
+        // } catch (e) {
+        //     log.E(TAG, "PlayVoice Error.", e);
+        // }
     }
 
     getMsgList(FromUserName) {
@@ -165,13 +219,14 @@ class ChatPage extends Page {
             _msg.setFromUserName(FromUserName);
             _msg.WithUserName = "@8a7d01877cc8f2d6ec9ebb608c630b810dbd2c9c7a754ba22257a59d49e69cfc";
             _msg.IsReceive = true;
-            _msg.MsgType = "@8a7d01877cc8f2d6ec9ebb608c630b810dbd2c9c7a754ba22257a59d49e69cfc";
+            _msg.MsgType = "34";
             _msg.Content = "。。。。。。。。。。。。。。。。。。。。。。。。。。。。。。。。。。。。。。。。。。。。。。" +
                 "。。。。。。。。。。。。。。。。。。。。。。。。。。。。。。。。。。。。。。。。。。。。。。。。。。。。。。。" +
                 "。。。。。。。。。。。。。。。。。。。。。。。。。。。。。。。。。。。。。。。。。。。。。。。。。。。。。。。" +
                 "。。。。。。。。。。。。。。。。。。。。。。。。。。。。。。。。。。。。。。。。。。。。。。。。。。。。。。。。。" +
                 "。。。。。。。。。。。。。。。。。。。。。。。。。。。。。。。。。。。。。。。。" + i;
             _msg.CreateTime = "1530339945";
+            _msg.VoiceLength = 13000;
             _msg.IsGroup = false;
             _msg.GroupMember = "";
             _msg.Url = "http://apis.map.qq.com/uri/v1/geocoder?coord=22.540672,114.093910";

@@ -546,10 +546,12 @@ class WxModule extends EventEmitter {
     async handleMsg(msg) {
         // log.I(TAG, "-----------------msg-------------------");
         // log.I(TAG, msg);
-        if (msg.MsgType == '3') {
+        if (msg.MsgType === CODES.MM_DATA_IMG) {
             msg.Content = "圖片.";
-        } else if (msg.MsgType != '1' && msg.Content != '') {
+        } else if (msg.MsgType !== CODES.MM_DATA_TEXT && msg.MsgType !== CODES.MM_DATA_VOICEMSG && msg.Content != "") {
             msg.Content = "暫不支持此類型消息.";
+        } else if (msg.MsgType == CODES.MSGTYPE_VOICE) {
+            msg.Content = "语音.";
         }
 
         if (msg.FromUserName.includes('@@')) {
@@ -562,51 +564,49 @@ class WxModule extends EventEmitter {
             //   ${msg.GroupMember.DisplayName || msg.GroupMember.NickName}: ${msg.Content}
             // `);
             // await this.mWxDao.insertMsg({WithUserName: msg.FromUserName,IsReceive: true,MsgType: msg.MsgType,Content: msg.Content,CreateTime: msg.CreateTime,IsGroup: true,GroupMember: msg.GroupMember});
-            this.msgInsert({ MsgId: msg.MsgId, WithUserName: msg.FromUserName, IsReceive: true, MsgType: msg.MsgType, Content: msg.Content, CreateTime: msg.CreateTime, IsGroup: true, GroupMember: msg.GroupMember });
-            this.emit('group', msg);
+            this.msgInsert({ MsgId: msg.MsgId, WithUserName: msg.FromUserName, IsReceive: true, MsgType: msg.MsgType, Content: msg.Content, CreateTime: msg.CreateTime, IsGroup: true, GroupMember: msg.GroupMember, Url: msg.Url, ImgUrl: img_url, VoiceLength: msg.VoiceLength });
+            this.emit("group", msg);
             return;
         }
 
         if (msg.StatusNotifyUserName && !this.isGetRecentContacts) {
             this.chatSet = msg.StatusNotifyUserName;
-            this.emit('u_contacts', "");
+            this.emit("u_contacts", "");
             this.isGetRecentContacts = true;
             console.log("this.chatSet:" + this.chatSet);
         }
 
         msg.Member = await this.getMember(msg.FromUserName);
 
-        // if (!msg.Member && msg.FromUserName === this.my.UserName) {
-        //     msg.Member = this.my;
-        // }
-
-        if (!msg.Member) return;
+        if (!msg.Member) {
+            return;
+        }
         // log.I(TAG,`
         //   新消息
         //   ${msg.Member.RemarkName || msg.Member.NickName}: ${msg.Content}
         // `);
 
         // 空消息，暂时不予理睬，MsgType == 51 ?
-        if (msg.FromUserName == this.my.UserName && msg.Content == '') {
+        if (msg.FromUserName === this.my.UserName && msg.Content === "") {
             return;
         }
 
         let img_url = "";
-        if (msg.Url != '' && msg.Url.includes("apis.map.qq")) {
+        if (msg.Url != "" && msg.Url.includes("apis.map.qq")) {
             // 嗯，這應該是地理位置消息.
             var msg_arr = msg.Content.toString().split(":<br/>");
             msg.Content = msg_arr[0];
-            img_url = 'https://' + this.baseHost + msg_arr[1];
+            img_url = "https://" + this.baseHost + msg_arr[1];
         }
 
-        if (msg.FromUserName != this.my.UserName) {
+        if (msg.FromUserName !== this.my.UserName) {
             //   await this.mWxDao.insertMsg({WithUserName: msg.FromUserName,IsReceive: true,MsgType: msg.MsgType,Content: msg.Content,CreateTime: msg.CreateTime,IsGroup: false,GroupMember: ''});
-            this.msgInsert({ MsgId: msg.MsgId, WithUserName: msg.FromUserName, IsReceive: true, MsgType: msg.MsgType, Content: msg.Content, CreateTime: msg.CreateTime, IsGroup: false, GroupMember: '', Url: msg.Url, ImgUrl: img_url });
+            this.msgInsert({ MsgId: msg.MsgId, WithUserName: msg.FromUserName, IsReceive: true, MsgType: msg.MsgType, Content: msg.Content, CreateTime: msg.CreateTime, IsGroup: false, GroupMember: '', Url: msg.Url, ImgUrl: img_url, VoiceLength: msg.VoiceLength });
         } else {
-            this.msgInsert({ MsgId: msg.MsgId, WithUserName: msg.ToUserName, IsReceive: false, MsgType: msg.MsgType, Content: msg.Content, CreateTime: msg.CreateTime, IsGroup: false, GroupMember: '', Url: msg.Url, ImgUrl: img_url });
+            this.msgInsert({ MsgId: msg.MsgId, WithUserName: msg.ToUserName, IsReceive: false, MsgType: msg.MsgType, Content: msg.Content, CreateTime: msg.CreateTime, IsGroup: false, GroupMember: '', Url: msg.Url, ImgUrl: img_url, VoiceLength: msg.VoiceLength });
         }
 
-        this.emit('friend', msg);
+        this.emit("friend", msg);
     }
 
     async fetchBatchgetContact(groupIds) {
@@ -953,6 +953,37 @@ class WxModule extends EventEmitter {
         });
     }
 
+    getVoice(uniqueID, callback) {
+        req.request({
+            url: URLS.API_webwxgetvoice,
+            method: 'get',
+            responseType: 'arraybuffer',
+            headers: {
+                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+                'Accept-Encoding': 'gzip, deflate, br',
+                'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_2) ' +
+                    'AppleWebKit/537.36 (KHTML, like Gecko) Chrome/50.0.2652.0 Safari/537.36',
+            },
+            params: {
+                msgid: uniqueID,
+                skey: this.skey
+            }
+        }).then((result) => {
+            const { data } = result;
+            callback = callback || (() => (null));
+            let path = APPCATION_PATH + "_" + uniqueID + ".mp3";
+            fs.writeFile(path, data, "binary", function (err) {
+                if (err) {
+                    callback(null);
+                } else {
+                    callback(path);
+                }
+            });
+        }).catch((e) => {
+            return;
+        });
+    }
+
     isLooped() {
         return this.isReady;
     }
@@ -993,7 +1024,7 @@ class WxModule extends EventEmitter {
             }
         }
 
-        if(!this.haveMySelt){
+        if (!this.haveMySelt) {
             let myself = new Contact();
             myself.setUserName(this.my.UserName);
             if (this.my.RemarkName !== '') {

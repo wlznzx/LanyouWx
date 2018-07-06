@@ -25,6 +25,7 @@ const ImageButton = require("yunos/ui/widget/ImageButton");
 const RowLayout = require("yunos/ui/layout/RowLayout");
 const resource = require("yunos/content/resource/Resource").getInstance();
 const Contants = require("./Contants");
+const MediaPlayer = require("yunos/multimedia/MediaPlayer");
 
 const TAG = "WebWx_Main";
 
@@ -270,15 +271,8 @@ class Main extends Page {
         this.mChatLV.width = width - this.mContactLV.width;
         this.mChatLV.height = height - 60;
         this.mChatLV.dividerHeight = 20;
-        this.mChatLV.on("itemselect", function (itemView, position) {
-            if (itemView.Url) {
-                var PageLink = require("yunos/page/PageLink");
-                let link = new PageLink("page://browser.yunos.com/browser");
-                let data = { url: itemView.Url };
-                link.data = JSON.stringify(data);
-                Page.getInstance().sendLink(link);
-            }
-        });
+        this.mChatLV.page = this;
+        this.mChatLV.on("itemselect", this.onChatLvSelect);
 
         // 消息栏
         this.mMsgTextView = new TextView();
@@ -352,7 +346,6 @@ class Main extends Page {
         this.inputView.addChild(emojiBtn);
         this.inputView.addChild(textInputBtn);
 
-
         this.mMainView.addChild(this.mContactLV); // 0
         this.mMainView.addChild(this.mTitleView); // 1
         this.mMainView.addChild(this.mChatLV); // 2
@@ -369,9 +362,47 @@ class Main extends Page {
         this.mMainLayout.setLayoutParam("input_view", "align", { left: { target: 0, side: "right" }, bottom: "parent" });
         this.mMainLayout.setLayoutParam("contactlv", "margin", { top: this.window.statusBarHeight });
         this.mMainLayout.setLayoutParam("titleview", "margin", { top: this.window.statusBarHeight });
-        this.mMainLayout.setLayoutParam("chatlv", "margin", { top: 10,bottom: Contants.INPUT_BAR_HEIGHT });
+        this.mMainLayout.setLayoutParam("chatlv", "margin", { top: 10, bottom: Contants.INPUT_BAR_HEIGHT });
         this.mMainLayout.setLayoutParam("msgtv", "margin", { top: this.window.statusBarHeight });
         this.window.addChild(this.mMainView);
+    }
+
+    initDatas(contacts_data) {
+        this.mMsgTextView.text = "數據加載中...";
+
+        log.I(TAG, "contacts_data = " + contacts_data.length);
+        this.mContactAdapter = new ContactAdapter(this.mWxModule);
+        this.mContactAdapter.data = contacts_data;
+        this.mContactLV.adapter = this.mContactAdapter;
+
+        this.chatAdapter = new ChatAdapter(this.mWxModule);
+        // this.chatAdapter.data = this.getMsgList();
+        this.mChatLV.adapter = this.chatAdapter;
+        // let isLooped = this.mWxModule.isLooped();
+        this.sMediaPlayer = new MediaPlayer(MediaPlayer.PlayerType.LOWPOWERAUDIO);
+        this.sMediaPlayer.on("prepared", function (result) {
+            this.sMediaPlayer.start();
+        });
+
+        this.sMediaPlayer.on("playbackcomplete", function () {
+            // 播放完成
+            if (this.sMediaPlayer) {
+                this.sMediaPlayer.reset();
+            }
+            if (this.playingAnimView) {
+                this.playingAnimView.stop();
+            }
+        });
+
+        this.sMediaPlayer.on("started", function () {
+            // 已开始播放
+        });
+
+        this.sMediaPlayer.on("error", function (errorCode) {
+            // 发生了错误，可以根据具体的错误码进行相应的处理
+        });
+        this.isLopped = true;
+        this.dataReady();
     }
 
     onContactLvSelect(itemView, position) {
@@ -387,33 +418,64 @@ class Main extends Page {
         this.currentItem = itemView;
         this.page.refreshMsgPart.call(this.page, this.ContactsList[position].UserName);
 
-
         // 去掉最近聊天欄目的小紅點.
         this.ContactsList[position].hasNewMsg = false;
         this.page.mContactAdapter.data = this.page.mContactLV.ContactsList;
         this.page.mContactAdapter.onDataChange();
+        if (this.page.inputView.visibility !== View.Visibility.Visible) {
+            this.page.inputView.visibility = View.Visibility.Visible;
+        }
     }
 
-    initDatas(contacts_data) {
-        this.mMsgTextView.text = "數據加載中...";
-        log.I(TAG, "contacts_data = " + contacts_data.length);
-        this.mContactAdapter = new ContactAdapter(this.mWxModule);
-        this.mContactAdapter.data = contacts_data;
-        this.mContactLV.adapter = this.mContactAdapter;
+    onChatLvSelect(itemView, position) {
+        if (itemView.Url) {
+            var PageLink = require("yunos/page/PageLink");
+            let link = new PageLink("page://browser.yunos.com/browser");
+            let data = { url: itemView.Url };
+            link.data = JSON.stringify(data);
+            Page.getInstance().sendLink(link);
+        } else if (itemView.animationView) {
+            this.page.mWxModule.getVoice(itemView.msgInfo.MsgId, (path) => {
+                this.page.playingAnimView = itemView.animationView;
+                this.page.playVoice.call(this.page, path);
+                itemView.animationView.start();
+            });
+        }
+    }
 
-        this.chatAdapter = new ChatAdapter(this.mWxModule);
-        // this.chatAdapter.data = this.getMsgList();
-        this.mChatLV.adapter = this.chatAdapter;
-        // let isLooped = this.mWxModule.isLooped();
-        this.dataReady();
-        this.isLopped = true;
+    playVoice(path) {
+        if (!this.sMediaPlayer) {
+            return;
+        }
+        log.E(TAG, "playVoice path = " + path);
+        try {
+            this.sMediaPlayer.setURISource(path);
+            this.sMediaPlayer.prepare();
+        } catch (e) {
+            log.E(TAG, "PlayVoice Error.", e);
+        }
+    }
+
+    stopVoice() {
+        if (!this.sMediaPlayer) {
+            return;
+        }
+        if (this.playingAnimView) {
+            this.playingAnimView.stop();
+        }
+        try {
+            this.sMediaPlayer.stop();
+            this.sMediaPlayer.reset();
+        } catch (e) {
+            log.E(TAG, "stopVoice Error.", e);
+        }
     }
 
     dataReady() {
         if (this.mMsgTextView) {
             this.mMainView.removeChild(this.loading);
             this.mMsgTextView.text = "";
-            this.inputView.visibility = View.Visibility.Visible;
+            // this.inputView.visibility = View.Visibility.Visible;
         }
     }
 
@@ -451,7 +513,6 @@ class Main extends Page {
             this.mChatLV.arriveAt(this.chatAdapter.getCount() - 1);
         });
     }
-
 
     getMsgList(pMsgList) {
         if (!this.chatList) {

@@ -12,7 +12,13 @@
                 "WRITE_EXTERNAL_STORAGE.permission.yunos.com",
                 "NETWORK.permission.yunos.com",
                 "WIFI.permission.yunos.com",
-                "MOBILE.permission.yunos.com"
+                "MOBILE.permission.yunos.com",
+                "MOUNT_UNMOUNT_FILESYSTEMS.permission.yunos.com",
+                "ACCESS_ALL_EXTERNAL_STORAGE.permission.yunos.com",
+                "READ_EXTERNAL_STORAGE.permission.yunos.com",
+                "WRITE_MEDIA_STORAGE.permission.yunos.com",
+                "MEDIA_SERVICE.permission.yunos.com",
+                "MANAGE_VOICE_KEYPHRASES.permission.yunos.com"
             ]
         }
     },
