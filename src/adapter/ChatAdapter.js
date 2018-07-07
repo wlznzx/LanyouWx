@@ -15,6 +15,9 @@ var imageLoader = require("yunos/util/ImageLoader").getInstance();
 
 const TAG = "WebWx_ChatAdapter";
 const IMG_PATH = "/opt/data/share/LanyouWx.yunos.com/";
+const WxFace = require("../WebWxModule/wx_face");
+const RichTextView = require("yunos/ui/view/RichTextView");
+const Image = require("yunos/multimedia/Image");
 
 
 class ChatAdapter extends BaseAdapter {
@@ -49,24 +52,59 @@ class ChatAdapter extends BaseAdapter {
         iv.scaleType = ImageView.ScaleType.Fitxy;
 
         ret.addChild(iv);
-        let tv = new TextView();
+
+        // let wxFace = new WxFace(this.data[position].Content);
+        //
+        //
+        // if(wxFace.isFace){
+        //     let face = wxFace.faceVIew;
+        //     ret.addChild(face);
+        //     if (!this.data[position].IsReceive) {
+        //         layout.setLayoutParam(0, "align", {right: "parent",middle: "parent"});
+        //         layout.setLayoutParam(1, "align", {right: {target: 0, side: "left"},middle: "parent"});
+        //         layout.setLayoutParam(0, "margin", {right: screen.getPixelByDp(30)});
+        //         layout.setLayoutParam(1, "margin", {right: screen.getPixelByDp(5)});
+        //         ret.height = 400;
+        //     }else {
+        //         ret.height = 60;
+        //         layout.setLayoutParam(0, "align", {left: "parent",middle: "parent"});
+        //         layout.setLayoutParam(1, "align", {left: {target: 0, side: "right"},middle: "parent"});
+        //         layout.setLayoutParam(0, "margin", {left: screen.getPixelByDp(30)});
+        //         layout.setLayoutParam(1, "margin", {left: screen.getPixelByDp(5)});
+        //     }
+        //     ret.height = 60;
+        //     ret.width = 400;
+        //
+        //     this.bindFaceData(ret, position);
+        //     return ret;
+        //
+        // }else{
+
+        let tv = new RichTextView();
+        // let tv = new TextView();
+
+        let facePath = resource.getImageSrc("/images/qqface.png");
+        let faceImage = new Image(facePath);
+        let height_face = faceImage.height/7;
+
+
         tv.id = "content";
-        tv.fontSize = "10sp";
+        tv.fontSize = "17sp";
+        tv.fontWeight = TextView.FontWeight.Light;
+        tv.verticalAlign = TextView.VerticalAlign.Middle;
         tv.maxWidth = 350;
         tv.multiLine = true;
-        // log.D(TAG, "position content = " + this.data[position].Content);
 
         if (this.data[position].Content) {
-            // tv.capInsets = [10, 10, 20, 2];
-            // tv.capInsets = [10, 10, 20, 2];
-            tv.text = this.data[position].Content;
-            // tv.background = resource.getImageSrc("images/chat_rev_bg.9.png");
+          // tv.capInsets = [10, 10, 20, 2];
+          // tv.capInsets = [10, 10, 20, 2];
+          tv.text = this.data[position].Content;
+          // tv.background = resource.getImageSrc("images/chat_rev_bg.9.png");
         }
-        var realWidth = tv.contentWidth;
-        var realHeight = tv.contentHeight;
+        let realWidth = tv.contentWidth;
+        let realHeight = tv.contentHeight;
 
-        // log.D(TAG, "realWidth = " + realWidth);
-        // log.D(TAG, "realHeight = " + realHeight);
+
         ret.addChild(tv);
         if (!this.data[position].IsReceive) {
             layout.setLayoutParam(0, "align", { right: "parent" });
@@ -93,28 +131,75 @@ class ChatAdapter extends BaseAdapter {
         //
         this.bindData(ret, position);
         return ret;
+        // }
     }
 
     bindData(convertView, position) {
         // log.D(TAG , "bindData = " + position);
         // log.D(TAG , this.data[position]);
-        if (this.data[position].WithUserName == "") return;
+        if(this.data[position].WithUserName == "") return;
+
         let content_tv = convertView.findViewById("content");
-        // content_tv.text = this.data[position].Content;
+        let content = this.data[position].Content;
+
+
+
+        let pattern_face= /\[.*?\]/g;
+        let array_face = content.match(pattern_face);
+
+        let index = 0;
+        let str = "";
+
+        log.D("test" ,"try to show");
+        if(array_face != null){
+            for(let i=0 ;i < array_face.length;i++){
+                //richTextView.text = "This is a <b>very<img src=\"" + smileFace2 + "\" width=\"65\" height=\"65\" align=\"middle\"/>happy</b> face vertically aligned in the middle.";
+                log.D("test","进行第" + i + "次");
+
+                let wxFace = new WxFace(array_face[i]);
+                if(wxFace.isFace){
+                    let path = "/images/faceView/" + "save" + wxFace.index +".png";
+                    let src = resource.getImageSrc(path);
+
+
+                    log.D("test" , "path:"+ path);
+                    log.D("test" , "src:" + src);
+
+                    str += content.slice(index,content.indexOf(array_face[i], index));
+                    str += "<img src=\"" + src +"\"  width=\"17sp\" height=\"17sp\" align=\"middle\"/>";
+
+                }else{
+                    str += content.slice(index , content.indexOf(array_face[i] , index) + array_face[i].length);
+                }
+
+                index = content.indexOf(array_face[i] , index) + array_face[i].length;
+
+                log.D("test" , "index:" + index);
+                log.D("test" ,"str:" + str);
+            }
+            str += content.slice(index);
+        }
+        else{
+            str = content;
+        }
+        log.D("--------------");
+        log.D("test" ,"final str:" + str);
+
+        content_tv.text = str;
+
         let avatar_iv = convertView.findViewById("avatar");
         if (!this.data[position].IsReceive) {
             this.data[position].WithUserName = this.mWxModule.my.UserName;
         }
         let _path = IMG_PATH + "_" + this.data[position].WithUserName + ".jpg";
         if (fs.existsSync(_path)) {
-            // log.D(TAG , "do re_path = " + _path);
+            // log.D("test" , "do re_path = " + _path);
             imageLoader.displayImage(avatar_iv, _path);
         } else if (this.mWxModule) {
+            // log.D("test","网上拉取");
             this.mWxModule.getHeadimg(this.data[position].WithUserName, (path) => {
                 imageLoader.displayImage(avatar_iv, path);
             });
-        } else {
-            avatar_iv.src = resource.getImageSrc("images/em_default_avatar.png");
         }
     }
 

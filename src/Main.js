@@ -30,6 +30,8 @@ const MediaPlayer = require("yunos/multimedia/MediaPlayer");
 const MyPopupMenuItem = require("./MyPopupMenuItem");
 const PageLink = require("yunos/page/PageLink");
 const ConfigStore = require("yunos/content/ConfigStore");
+const WxFace = require("./WebWxModule/wx_face");
+const PopupCompositeView = require("./WebWxModule/popupCompositeView");
 const TAG = "WebWx_Main";
 let self;
 class Main extends Page {
@@ -348,12 +350,66 @@ class Main extends Page {
         inputLayout.spacing = 0;
         this.inputView.layout = inputLayout;
 
+        //表情框图
+        let ImagePath = resource.getImageSrc("/images/qqface1.png");
+        let faceView = new ImageView();
+        faceView.id = "iiiv";
+        faceView.src = ImagePath;
+
+        let popupCompositeView = new PopupCompositeView();
+        popupCompositeView.width = faceView.width;
+        popupCompositeView.height = faceView.height;
+        popupCompositeView.addChild(faceView);
+
+
+        faceView.addEventListener("touchstart", (e) =>
+        {
+            let _touchStartX = e._touches[0].clientX;
+            let _touchStartY = e._touches[0].clientY;
+            log.D("test","try WxFace");
+            let wxface =new WxFace(_touchStartX,_touchStartY);
+            // let msg = wxface.jugeFaceMsg(_touchStartX,_touchStartY);
+            // let msg = this.jugeFace(_touchStartX,_touchStartY);
+            log.D("test","this is trying to sending");
+            log.D("test",wxface.msg);
+            this.mWxModule.sendText(this.ChatWithUserName, wxface.msg);
+
+            //测试单个表情读取，view_test布局有添加。
+
+            // log.D("test","try to show smile");
+            // let wxface1 = new WxFace("[微笑]");
+            // this.view_test = wxface1.faceVIew;
+            // this.view_test.id = "test";
+            // this.mMainView.addChild(this.view_test);
+        });
         let emojiBtn = new Button();
         emojiBtn.sizeType = Button.SizeType.Small;
         emojiBtn.buttonColor = "rgba(123,127,141,0.6)";
         emojiBtn.text = "表情";
         emojiBtn.height = this.inputView.height;
         emojiBtn.width = this.inputView.width / 2;
+        this.needAddImage = true;
+        this.needShowImage = false;
+
+        emojiBtn.on("tap", () => {
+            let left = emojiBtn.left;
+            let top = emojiBtn.top;
+            let parent = emojiBtn.parent;
+            while (parent) {
+                left += parent.left;
+                top += parent.top;
+                parent = parent.parent;
+            }
+            top -= emojiBtn.height + popupCompositeView.height;
+            log.D("test","try to show popupCompositeView");
+            log.D("test","top：" + top);
+            popupCompositeView.animation_top = top;
+            log.D("test" ,"animation_top:" + popupCompositeView.animation_top);
+            popupCompositeView.show(left , top);
+        });
+
+
+
         let textInputBtn = new Button();
         textInputBtn.sizeType = Button.SizeType.Small;
         textInputBtn.buttonColor = "rgba(123,127,141,0.6)";
