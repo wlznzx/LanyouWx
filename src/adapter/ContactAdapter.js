@@ -57,7 +57,7 @@ class ContactAdapter extends BaseAdapter {
             } else {
                 this.mWxModule.getHeadimg(this.data[position].UserName, (path) => {
                     log.D(TAG, "download = " + path);
-                    imageLoader.displayImage(avatar_iv, path);
+                    if (path) imageLoader.displayImage(avatar_iv, path);
                 });
             }
         }

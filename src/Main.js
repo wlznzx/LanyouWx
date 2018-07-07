@@ -30,7 +30,7 @@ const MediaPlayer = require("yunos/multimedia/MediaPlayer");
 const MyPopupMenuItem = require("./MyPopupMenuItem");
 const PageLink = require("yunos/page/PageLink");
 const TAG = "WebWx_Main";
-
+let self;
 class Main extends Page {
 
     onCreate() {
@@ -68,6 +68,7 @@ class Main extends Page {
         //     log.D(TAG, "tap", putBtn.text);
         // });
         // });
+        self = this;
         this.initLoadingView();
         this.initCallBack();
     }
@@ -210,18 +211,17 @@ class Main extends Page {
         // 右上侧菜单按钮
         let optionsBtn = new ImageButton();
         optionsBtn.styleType = ImageButton.StyleType.Block;
- //       optionsBtn.multiState = {
- //           focused: {
- //              background: "#FFFFFF",
- //               opacity: 0
- //           },
- //           pressed: {
- //               background: "#FFFFFF",
-  //              opacity: 0
- //           }
- //       };
+        //       optionsBtn.multiState = {
+        //           focused: {
+        //              background: "#FFFFFF",
+        //               opacity: 0
+        //           },
+        //           pressed: {
+        //               background: "#FFFFFF",
+        //              opacity: 0
+        //           }
+        //       };
         optionsBtn.src = resource.getImageSrc("setting.png");
-
         optionsBtn.height = 30;
         optionsBtn.width = 30;
         optionsBtn.on("tap", () => {
@@ -250,22 +250,20 @@ class Main extends Page {
             this.optionsMenu.addChild(item);
         }
         this.optionsMenu.on("result", (index) => {
-                switch (index) {
-                    case 0:
-                        //    this.optionsMenu.children[0].setSwitch();
-                        break;
-                    case 1:
-                        let link = new PageLink("page://LanyouWx.yunos.com/TeachPage");
-                        Page.getInstance().sendLink(link);
-                        break;
-                    default:
- //                       this.window.removeAllChildren();
- //                       this.initLoadingView();
-                        break;
-                }
+            switch (index) {
+                case 0:
+                    //    this.optionsMenu.children[0].setSwitch();
+                    break;
+                case 1:
+                    let link = new PageLink("page://LanyouWx.yunos.com/TeachPage");
+                    Page.getInstance().sendLink(link);
+                    break;
+                default:
+                    //                       this.window.removeAllChildren();
+                    //                       this.initLoadingView();
+                    break;
             }
-
-        );
+        });
 
         // 右上侧对话框.
         this.mTitleView = new CompositeView();
@@ -410,28 +408,6 @@ class Main extends Page {
         // this.chatAdapter.data = this.getMsgList();
         this.mChatLV.adapter = this.chatAdapter;
         // let isLooped = this.mWxModule.isLooped();
-        this.sMediaPlayer = new MediaPlayer(MediaPlayer.PlayerType.LOWPOWERAUDIO);
-        this.sMediaPlayer.on("prepared", function (result) {
-            this.sMediaPlayer.start();
-        });
-
-        this.sMediaPlayer.on("playbackcomplete", function () {
-            // 播放完成
-            if (this.sMediaPlayer) {
-                this.sMediaPlayer.reset();
-            }
-            if (this.playingAnimView) {
-                this.playingAnimView.stop();
-            }
-        });
-
-        this.sMediaPlayer.on("started", function () {
-            // 已开始播放
-        });
-
-        this.sMediaPlayer.on("error", function (errorCode) {
-            // 发生了错误，可以根据具体的错误码进行相应的处理
-        });
         this.isLopped = true;
         this.dataReady();
     }
@@ -459,7 +435,9 @@ class Main extends Page {
     }
 
     onChatLvSelect(itemView, position) {
-        if (itemView.Url) {
+        if (itemView.MsgType == "3") {
+            //
+        } else if (itemView.Url) {
             let link = new PageLink("page://browser.yunos.com/browser");
             let data = { url: itemView.Url };
             link.data = JSON.stringify(data);
@@ -474,11 +452,14 @@ class Main extends Page {
     }
 
     playVoice(path) {
-        if (!this.sMediaPlayer) {
+        log.D(TAG, "playVoice path = " + path);
+        if (this.sMediaPlayer) {
             return;
         }
-        log.E(TAG, "playVoice path = " + path);
+        log.D(TAG, "Go playVoice");
         try {
+            this.sMediaPlayer = new MediaPlayer(MediaPlayer.PlayerType.LOWPOWERAUDIO);
+            this.initListener();
             this.sMediaPlayer.setURISource(path);
             this.sMediaPlayer.prepare();
         } catch (e) {
@@ -486,19 +467,40 @@ class Main extends Page {
         }
     }
 
-    stopVoice() {
+    destroyPlayer() {
         if (!this.sMediaPlayer) {
             return;
         }
-        if (this.playingAnimView) {
-            this.playingAnimView.stop();
-        }
-        try {
-            this.sMediaPlayer.stop();
-            this.sMediaPlayer.reset();
-        } catch (e) {
-            log.E(TAG, "stopVoice Error.", e);
-        }
+        this.sMediaPlayer.stop();
+        this.sMediaPlayer.reset();
+        this.sMediaPlayer = null;
+    }
+
+    initListener(){
+        this.sMediaPlayer.on("prepared", function (result) {
+            log.D(TAG, "MediaPlayer prepared.");
+            this.start();
+        });
+
+        this.sMediaPlayer.on("playbackcomplete", function () {
+            // 播放完成
+            log.D(TAG, "MediaPlayer playbackcomplete.");
+            if (self.playingAnimView) {
+                self.playingAnimView.stop();
+            }
+            self.destroyPlayer();
+        });
+
+        this.sMediaPlayer.on("started", function () {
+            // 已开始播放
+            log.D(TAG, "MediaPlayer started.");
+        });
+
+        this.sMediaPlayer.on("error", function (errorCode) {
+            // 发生了错误，可以根据具体的错误码进行相应的处理
+            log.D(TAG, "MediaPlayer error.");
+            self.destroyPlayer();
+        });
     }
 
     dataReady() {
@@ -508,7 +510,6 @@ class Main extends Page {
             // this.inputView.visibility = View.Visibility.Visible;
         }
     }
-
 
     // 更新....
     refreshContactPart(WithUserName, pIsReceive) {

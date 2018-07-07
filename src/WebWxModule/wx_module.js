@@ -28,6 +28,7 @@ let URLS = getUrls({});
 // const cookiePath = path.join('/tmp', '.cookie.json');
 // const secretPath = path.join('/tmp', '.secret.json');
 const APPCATION_PATH = "/opt/data/share/LanyouWx.yunos.com/";
+const MEDAI_PATH = "/opt/data/share/common/";
 const cookiePath = APPCATION_PATH + "cookie.json";
 const secretPath = APPCATION_PATH + "secret.json";
 // touch.sync(cookiePath);
@@ -953,7 +954,44 @@ class WxModule extends EventEmitter {
         });
     }
 
+    getMsgImg(uniqueID, callback) {
+        req.request({
+            url: URLS.API_webwxgetmsgimg,
+            method: 'get',
+            responseType: 'arraybuffer',
+            headers: {
+                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+                'Accept-Encoding': 'gzip, deflate, br',
+                'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_2) ' +
+                    'AppleWebKit/537.36 (KHTML, like Gecko) Chrome/50.0.2652.0 Safari/537.36',
+            },
+            params: {
+                msgid: uniqueID,
+                skey: this.skey
+            }
+        }).then((result) => {
+            const { data } = result;
+            callback = callback || (() => (null));
+            let path = APPCATION_PATH + "_" + uniqueID + ".jpg";
+            fs.writeFile(path, data, "binary", function (err) {
+                if (err) {
+                    callback(null);
+                } else {
+                    callback(path);
+                }
+            });
+        }).catch((e) => {
+            return;
+        });
+    }
+
     getVoice(uniqueID, callback) {
+        // 判断对应消息ID的语音是否已经存在;
+        callback = callback || (() => (null));
+        let path = MEDAI_PATH + "_" + uniqueID + ".mp3"
+        if (fs.existsSync(path)) {
+            callback(path);
+        }
         req.request({
             url: URLS.API_webwxgetvoice,
             method: 'get',
@@ -970,8 +1008,8 @@ class WxModule extends EventEmitter {
             }
         }).then((result) => {
             const { data } = result;
-            callback = callback || (() => (null));
-            let path = APPCATION_PATH + "_" + uniqueID + ".mp3";
+            // callback = callback || (() => (null));
+            // let path = MEDAI_PATH + "_" + uniqueID + ".mp3";
             fs.writeFile(path, data, "binary", function (err) {
                 if (err) {
                     callback(null);

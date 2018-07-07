@@ -11,11 +11,9 @@ const LayoutManager = require("yunos/ui/markup/LayoutManager");
 
 class TeachPage extends Page {
     onStart() {
-
         let self = this;
-
         LayoutManager.load("teachPage", (err, rootView) => {
-            if(!err){
+            if (!err) {
                 self.window.addChild(rootView);
                 self.window.findViewById("bt").addEventListener("tap", () => {
                     this.window.stopPage();

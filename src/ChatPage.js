@@ -17,7 +17,7 @@ const ChatAdapter = require("./adapter/ChatAdapter");
 const ContactAdapter = require("./adapter/ContactAdapter");
 const RequireRouter = require("./RequireRouter");
 const MsgInfo = require("./WebWxModule/MsgInfo");
-
+const AudioManager = require("yunos/device/AudioManager");
 const Image = require("yunos/multimedia/Image");
 const Bitmap = require("yunos/graphics/Bitmap");
 const MediaPlayer = require("yunos/multimedia/MediaPlayer");
@@ -100,18 +100,18 @@ class ChatPage extends Page {
         this.mMainView.addChild(this.mTitleView); // 1
         this.mMainView.addChild(this.mChatLV); // 2
 
-/*
-        const spriteView = new SpriteView();
-        spriteView.width = 50;
-        spriteView.height = 50;
-        spriteView.src = resource.getImageSrc("./images/voice.png");
-        spriteView.frameWidth = 25;
-        spriteView.frameHeight = 25;
-        spriteView.frameDuration = 150;
-        spriteView.frameCount = 3;
-        this.mMainView.addChild(spriteView);
-        spriteView.start();
-*/
+        /*
+                const spriteView = new SpriteView();
+                spriteView.width = 50;
+                spriteView.height = 50;
+                spriteView.src = resource.getImageSrc("./images/voice.png");
+                spriteView.frameWidth = 25;
+                spriteView.frameHeight = 25;
+                spriteView.frameDuration = 150;
+                spriteView.frameCount = 3;
+                this.mMainView.addChild(spriteView);
+                spriteView.start();
+        */
         this.mChatLV.on("itemselect", function (itemView, position) {
             if (itemView.Url) {
                 var PageLink = require("yunos/page/PageLink");
@@ -166,8 +166,10 @@ class ChatPage extends Page {
         //
 
         this.sMediaPlayer = new MediaPlayer(MediaPlayer.PlayerType.LOWPOWERAUDIO);
-        this.playVoice("/opt/data/share/LanyouWx.yunos.com/_8690156483247251196.mp3");
-        // this.playVoice("/usr/bin/ut/res/audio/sp.mp3");
+        this.sMediaPlayer.setAudioStreamType(AudioManager.StreamType.AUDIO_STREAM_MUSIC);
+        // this.playVoice("https://wx2.qq.com/cgi-bin/mmwebwx-bin/webwxgetvoice?msgid=5165589984116123686&skey=@crypt_81051821_deb7d8f804bdbde84054005ee1608821");
+        // this.playVoice('/opt/data/share/LanyouWx.yunos.com/_4521707765874170551.mp3');
+        this.playVoice("/opt/data/share/common/_4521707765874170551.mp3");
         this.sMediaPlayer.on("prepared", function (result) {
             log.D(TAG, "MediaPlayer prepared.");
             // this.sMediaPlayer.start();
@@ -196,14 +198,29 @@ class ChatPage extends Page {
     }
 
     playVoice(path) {
+
+        let _headers = {
+            'Accept': 'image/webp,image/apng,image/*,*/*;q=0.8',
+            'Referer': 'https://wx2.qq.com/',
+            'Accept-Language': 'zh-CN',
+            'Accept-Encoding': 'gzip, deflate, br',
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/67.0.3396.62 Safari/537.36',
+            'Host': 'wx2.qq.com',
+            'Connection': 'Keep-Alive',
+            'Range': 'bytes=0-',
+            'Cookie': 'webwxuvid=449b6ded4c3bec577b24bbc08521f19091bfb53f1b30758d768d0333cfb66f7104cd8d2f8df049979521a3e842b109ce; pgv_pvi=9398682624; pgv_pvid=8145106167; MM_WX_NOTIFY_STATE=1; uin=null; skey=null; luin=null; lskey=null; user_id=null; session_id=null; MM_WX_SOUND_STATE=1; last_wxuin=1952323612; wxuin=1952323612; login_frequency=1; mm_lang=zh_CN; wxpluginkey=1530940442; wxsid=7Cl6oCrRDy+chBwX; webwx_data_ticket=gScmAU6F+BZJ4mWylqbY/fc/; webwx_auth_ticket=CIsBENOwie4MGoAB8iB1KT+5fLdcME2Fepzwvscsqz5VDKRDWOq8Leoz7EOR3u9rrT6yk7pnoTB7pCLV9B/uMjnBxYT2xbYL7Alhgj961xD7JV4zYct2S8CZhgVqk5pVllU+k1M71PkLFJLtIabJDVz48UjigpI6wC6imiWPkTfAQEYtuO9g+WoDUOE=; wxloadtime=1530945754_expired'
+        }
+
         if (!this.sMediaPlayer) {
             return;
         }
+
+
         log.E(TAG, "playVoice path = " + path);
         // try {
-            this.sMediaPlayer.setURISource(path);
-            this.sMediaPlayer.prepareSync();
-            this.sMediaPlayer.start();
+        this.sMediaPlayer.setURISource(path);
+        this.sMediaPlayer.prepareSync();
+        this.sMediaPlayer.start();
         // } catch (e) {
         //     log.E(TAG, "PlayVoice Error.", e);
         // }

@@ -29,7 +29,6 @@ class MyPopupMenuItem extends PopupMenuItem {
         let state = cs.get("key", false);
 
         sw.value = state;
-
         sw.on("valuechanged", (value) => {
             //sw.text = "value=" + value + ":";
             if (sw.value === true) {

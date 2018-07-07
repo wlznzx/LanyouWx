@@ -25,7 +25,9 @@ class ChatAdapter extends BaseAdapter {
     }
 
     createItem(position, convertView) {
-        if (this.data[position].MsgType == "34") {
+        if (this.data[position].MsgType == "3") {
+            convertView = this.buildImgLayout(position);
+        } else if (this.data[position].MsgType == "34") {
             convertView = this.buildVoiceMsgLayout(position);
         } else if (this.data[position].Url) {
             convertView = this.buildLocationMsgLayout(position);
@@ -193,6 +195,8 @@ class ChatAdapter extends BaseAdapter {
         }
         contextIv.text = this.data[position].Content;
         ret.Url = this.data[position].Url;
+
+        ret.MsgType = this.data[position].MsgType;
         log.D(TAG, "buildLocationMsgLayout Msg--------------");
         log.D(TAG, this.data[position]);
         return ret;
@@ -216,7 +220,7 @@ class ChatAdapter extends BaseAdapter {
         animationView.width = 25;
         animationView.height = 25;
         // 设置控件Sprite图片
-        animationView.src = resource.getImageSrc("./images/voice.png");
+        // animationView.src = resource.getImageSrc("./images/voice.png");
         // 设置每帧展示的图片大小
         animationView.frameWidth = 25;
         animationView.frameHeight = 25;
@@ -242,7 +246,7 @@ class ChatAdapter extends BaseAdapter {
         bgView.id = "bg_view";
         bgView.width = Math.floor(barLen);
         bgView.height = ivSize;
-        bgView.background = "white";
+        // bgView.background = "white";
         bgView.borderColor = "black"; // 设置边框颜色为蓝色
         bgView.borderWidth = 1; // 设置边框宽度为4像素；
         bgView.borderRadius = 5; // 设置边框为半径为20像素的圆角矩形；
@@ -266,8 +270,13 @@ class ChatAdapter extends BaseAdapter {
             layout.setLayoutParam("avatar", "align", { right: "parent" });
             layout.setLayoutParam("anim_view", "align", { right: { target: "avatar", side: "left" }, middle: "parent" });
             layout.setLayoutParam("bg_view", "align", { right: { target: "avatar", side: "left" }, middle: "parent" });
+            layout.setLayoutParam("voice_lenght_tv", "align", { right: { target: "bg_view", side: "left" }, middle: "parent" });
             layout.setLayoutParam("avatar", "margin", { right: screen.getPixelByDp(30) });
-            layout.setLayoutParam("anim_view", "margin", { right: screen.getPixelByDp(15) });
+            layout.setLayoutParam("anim_view", "margin", { right: screen.getPixelByDp(30) });
+            layout.setLayoutParam("bg_view", "margin", { right: screen.getPixelByDp(15) });
+            layout.setLayoutParam("voice_lenght_tv", "margin", { right: screen.getPixelByDp(10) });
+            bgView.background = "#b2e281";
+            animationView.src = resource.getImageSrc("./images/voice_self.png");
         } else {
             layout.setLayoutParam("avatar", "align", { left: "parent" });
             layout.setLayoutParam("anim_view", "align", { left: { target: "avatar", side: "right" }, middle: "parent" });
@@ -277,6 +286,8 @@ class ChatAdapter extends BaseAdapter {
             layout.setLayoutParam("anim_view", "margin", { left: screen.getPixelByDp(30) });
             layout.setLayoutParam("bg_view", "margin", { left: screen.getPixelByDp(15) });
             layout.setLayoutParam("voice_lenght_tv", "margin", { left: screen.getPixelByDp(10) });
+            animationView.src = resource.getImageSrc("./images/voice.png");
+            bgView.background = "white";
         }
 
         ret.height = ivSize;
@@ -298,6 +309,73 @@ class ChatAdapter extends BaseAdapter {
         msgInfo.VoiceLength = this.data[position].VoiceLength
         ret.animationView = animationView;
         ret.msgInfo = msgInfo;
+        ret.MsgType = this.data[position].MsgType;
+        return ret;
+    }
+
+    buildImgLayout(position) {
+        let ret = new CompositeView();
+        let layout = new RelativeLayout();
+        ret.layout = layout;
+        var avatarIv = new ImageView();
+        var ivSize = 40;
+        avatarIv.id = "avatar";
+        avatarIv.width = ivSize;
+        avatarIv.height = ivSize;
+        avatarIv.scaleType = ImageView.ScaleType.Fitxy;
+        ret.addChild(avatarIv);
+
+        let IMG_MSG_WIDTH = 350;
+        let IMG_MSG_HEIGHT = 250;
+        let bgIV = new ImageView();
+        bgIV.id = "bg_id";
+        bgIV.width = IMG_MSG_WIDTH;
+        bgIV.height = IMG_MSG_HEIGHT;
+        bgIV.scaleType = ImageView.ScaleType.Fitxy;
+        ret.addChild(bgIV);
+
+        if (!this.data[position].IsReceive) {
+            layout.setLayoutParam("avatar", "align", { right: "parent" });
+            layout.setLayoutParam("bg_id", "align", { right: { target: "avatar", side: "left" } });
+            layout.setLayoutParam("avatar", "margin", { right: screen.getPixelByDp(30) });
+            layout.setLayoutParam("bg_id", "margin", { right: screen.getPixelByDp(5) });
+        } else {
+            layout.setLayoutParam("avatar", "align", { left: "parent" });
+            layout.setLayoutParam("bg_id", "align", { left: { target: "avatar", side: "right" } });
+            layout.setLayoutParam("avatar", "margin", { left: screen.getPixelByDp(30) });
+            layout.setLayoutParam("bg_id", "margin", { left: screen.getPixelByDp(5) });
+        }
+        ret.height = IMG_MSG_HEIGHT;
+        ret.width = IMG_MSG_WIDTH + 60;
+
+        // BindData
+        let _path = IMG_PATH + "_" + this.data[position].WithUserName + ".jpg";
+        avatarIv.src = resource.getImageSrc("images/em_default_avatar.png");
+        if (fs.existsSync(_path)) {
+            imageLoader.displayImage(avatarIv, _path);
+        } else if (this.mWxModule) {
+            this.mWxModule.getHeadimg(this.data[position].WithUserName, (path) => {
+                imageLoader.displayImage(avatarIv, path);
+            });
+        } else {
+            avatarIv.src = resource.getImageSrc("images/em_default_avatar.png");
+        }
+
+        let _img = IMG_PATH + "_" + this.data[position].MsgId + ".jpg";
+        // bgIV.src = resource.getImageSrc("images/location_demo.png");
+        if (fs.existsSync(_img)) {
+            imageLoader.displayImage(bgIV, _img);
+        } else if (this.mWxModule) {
+            this.mWxModule.getMsgImg(this.data[position].MsgId, (path) => {
+                imageLoader.displayImage(bgIV, path);
+            });
+        } else {
+            bgIV.src = resource.getImageSrc("images/location_demo.png");
+        }
+        ret.Url = this.data[position].Url;
+        ret.MsgType = this.data[position].MsgType;
+        // log.D(TAG, "buildLocationMsgLayout Msg--------------");
+        // log.D(TAG, this.data[position]);
         return ret;
     }
 
