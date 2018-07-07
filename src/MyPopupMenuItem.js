@@ -11,7 +11,7 @@ const TapRecognizer = require("yunos/ui/gesture/TapRecognizer");
 const PopupMenu = require("yunos/ui/widget/PopupMenu");
 const PopupMenuItem = PopupMenu.PopupMenuItem;
 const ConfigStore = require("yunos/content/ConfigStore");
-
+const TAG = "MyPopupMenuItem";
 //let state = false;
 
 class MyPopupMenuItem extends PopupMenuItem {
@@ -22,30 +22,33 @@ class MyPopupMenuItem extends PopupMenuItem {
      */
     constructor(context, text = "") {
         super(context, text);
-        const sw = new Switch();
 
-        var cs = ConfigStore.getInstance("2");
-
-        let state = cs.get("key", false);
-
+        let sw = new Switch();
+        let cs = ConfigStore.getInstance("settings");
+        let state = cs.get("key", true);
+        log.D("test" , "Switch初始化");
         sw.value = state;
         sw.on("valuechanged", (value) => {
             //sw.text = "value=" + value + ":";
-            if (sw.value === true) {
-                state = true;
+            if (sw.value === false) {
+
+                this.mMsgTextView.visibility = View.Visibility.Hidden;
+                state = false;
                 cs.put("key", state);
                 cs.apply();
+                log.D("test" , "Switch修改为关闭写入");
                 // cs.apply((err) => {
                 //     if (err !== null) {
                 //
                 //     }
                 // });
             } else {
+                state = true;
 
-                state = false;
+                this.mMsgTextView.visibility = View.Visibility.Visible;
                 cs.put("key", state);
                 cs.apply();
-
+                log.D("test" , "Switch修改为打开写入");
                 // cs.apply((err) => {
                 //     if (err !== null) {
                 //

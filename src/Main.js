@@ -29,6 +29,7 @@ const Contants = require("./Contants");
 const MediaPlayer = require("yunos/multimedia/MediaPlayer");
 const MyPopupMenuItem = require("./MyPopupMenuItem");
 const PageLink = require("yunos/page/PageLink");
+const ConfigStore = require("yunos/content/ConfigStore");
 const TAG = "WebWx_Main";
 let self;
 class Main extends Page {
@@ -240,8 +241,11 @@ class Main extends Page {
 
         this.optionsMenu = new PopupMenu();
         this.optionsMenu.width = 300;
+
+
+        let _MyPopupMenuItem = new MyPopupMenuItem("自动播报");
         let items = [
-            new MyPopupMenuItem("自动播报"),
+            _MyPopupMenuItem,
             new PopupMenu.PopupMenuItem("新手指南"),
             new PopupMenu.PopupMenuItem("登出")
         ];
@@ -312,6 +316,22 @@ class Main extends Page {
         this.mMsgTextView.opacity = 0.6;
         this.mMsgTextView.text = "";
         this.mMsgTextView.fontSize = "12sp";
+
+        log.D("test", "-------------------ConfigStore----------------");
+        //消息框设置
+        let cs = ConfigStore.getInstance("settings");
+        var initstate = cs.get("key", true);
+
+        if (initstate === true) {
+            log.D("test", "Switch初始化为开");
+            this.mMsgTextView.visibility = View.Visibility.Visible;
+
+        } else {
+            log.D("test", "Sitch初始化为关");
+            this.mMsgTextView.visibility = View.Visibility.Hidden;
+        }
+        log.D("test", "-------------------ConfigStore End----------------");
+
         this.mMsgTextView.verticalAlign = TextView.VerticalAlign.Middle;
         this.mMsgTextView.elideMode = TextView.ElideMode.ElideRight;
 
@@ -394,6 +414,7 @@ class Main extends Page {
         this.mMainLayout.setLayoutParam("chatlv", "margin", { top: 10, bottom: Contants.INPUT_BAR_HEIGHT });
         this.mMainLayout.setLayoutParam("msgtv", "margin", { top: this.window.statusBarHeight });
         this.window.addChild(this.mMainView);
+        _MyPopupMenuItem.mMsgTextView = this.mMsgTextView;
     }
 
     initDatas(contacts_data) {
