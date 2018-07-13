@@ -547,7 +547,7 @@ class WxModule extends EventEmitter {
     async handleMsg(msg) {
         // log.I(TAG, "-----------------msg-------------------");
         // log.I(TAG, msg);
-        if (msg.MsgType === CODES.MM_DATA_IMG) {
+        if (msg.MsgType === CODES.MM_DATA_IMG || msg.MsgType === CODES.MM_DATA_EMOJI) {
             msg.Content = "圖片.";
         } else if (msg.MsgType !== CODES.MM_DATA_TEXT && msg.MsgType !== CODES.MM_DATA_VOICEMSG && msg.Content != "") {
             msg.Content = "暫不支持此類型消息.";

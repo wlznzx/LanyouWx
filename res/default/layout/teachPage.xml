@@ -31,6 +31,6 @@
     <Button
         id = "bt"
         sizeType = "{enum.Button.SizeType.Normal}"
-        text = "退出"
+        text = "返回"
     />
 </CompositeView>

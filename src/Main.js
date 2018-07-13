@@ -32,6 +32,11 @@ const PageLink = require("yunos/page/PageLink");
 const ConfigStore = require("yunos/content/ConfigStore");
 const WxFace = require("./WebWxModule/wx_face");
 const PopupCompositeView = require("./WebWxModule/popupCompositeView");
+const Rectangle = require("yunos/graphics/Rectangle");
+const GridView = require("yunos/ui/view/GridView");
+const ImgeGridAdapter = require("./adapter/ImgeGridAdapter");
+const TextGridAdapter = require("./adapter/TextGridAdapter");
+
 const TAG = "WebWx_Main";
 let self;
 class Main extends Page {
@@ -74,6 +79,9 @@ class Main extends Page {
         self = this;
         this.initLoadingView();
         this.initCallBack();
+
+        // 初始化语音播报列表
+        this.voiseBroadcastList = new Array();
     }
 
     initLoadingView() {
@@ -133,7 +141,9 @@ class Main extends Page {
 
         this.mWxModule.on("msg", (msg) => {
             if (this.ChatWithUserName && msg.WithUserName === this.ChatWithUserName) {
+                log.D(TAG, "do refreshMsgPart");
                 this.refreshMsgPart(this.ChatWithUserName);
+
             }
             this.refreshContactPart(msg.WithUserName, msg.IsReceive);
         });
@@ -192,6 +202,27 @@ class Main extends Page {
         this.mWxModule.doRun();
     }
 
+    doBroadcast() {
+        if (this.isBroadcasting) {
+            return;
+        }
+        this.isBroadcasting = true;
+        let msg = this.voiseBroadcastList.shift();
+        while (msg) {
+            if (this.ChatWithUserName && msg.WithUserName === this.ChatWithUserName) {
+                // 播报;
+                this.mWxModule.getVoice(msg.MsgId, (path) => {
+                    this.playVoice.call(this, path);
+                });
+                msg = this.voiseBroadcastList.shift();
+            } else {
+                // 清空list；
+                this.voiseBroadcastList = new Array();
+            }
+        }
+        this.isBroadcasting = false;
+    }
+
     initView() {
         let width = this.window.width;
         let height = this.window.height;
@@ -225,8 +256,12 @@ class Main extends Page {
         //           }
         //       };
         optionsBtn.src = resource.getImageSrc("setting.png");
-        optionsBtn.height = 30;
-        optionsBtn.width = 30;
+        optionsBtn.height = 40;
+        optionsBtn.width = 40;
+
+
+        let touchRegion = [new Rectangle(-100,-100,-200,-200),new Rectangle(-100, -100, 200, 200)];
+        optionsBtn.touchRegion = touchRegion;
         optionsBtn.on("tap", () => {
             let left = optionsBtn.left;
             let top = optionsBtn.top;
@@ -277,8 +312,9 @@ class Main extends Page {
         let titleLayout = new RelativeLayout();
         this.mTitleView.layout = titleLayout;
         this.contactNameTV = new TextView();
-        this.contactNameTV.fontSize = "12sp";
+        this.contactNameTV.fontSize = "18sp";
         this.contactNameTV.text = "";
+        this.contactNameTV.verticalAlign = TextView.VerticalAlign.Middle;
         this.mTitleView.width = width - this.mContactLV.width;
         this.mTitleView.height = 60;
         let divider = new View(this._context);
@@ -290,8 +326,8 @@ class Main extends Page {
         this.mTitleView.addChild(this.contactNameTV);
         this.mTitleView.addChild(optionsBtn);
         this.mTitleView.addChild(divider);
-        titleLayout.setLayoutParam(0, "align", { right: "parent", middle: "parent" });
-        titleLayout.setLayoutParam(0, "margin", { right: 60 });
+        titleLayout.setLayoutParam(0, "align", { center: "parent", middle: "parent" });
+    //    titleLayout.setLayoutParam(0, "margin", { right: 160});
         titleLayout.setLayoutParam(1, "align", { right: "parent", middle: "parent" });
         titleLayout.setLayoutParam(1, "margin", { right: 15 });
         titleLayout.setLayoutParam("divider", "align", {
@@ -305,6 +341,7 @@ class Main extends Page {
         this.mChatLV.id = "chatlv";
         this.mChatLV.width = width - this.mContactLV.width;
         this.mChatLV.height = height - 60;
+        this.mChatLV.height -= 120;
         this.mChatLV.dividerHeight = 20;
         this.mChatLV.page = this;
         this.mChatLV.on("itemselect", this.onChatLvSelect);
@@ -319,20 +356,16 @@ class Main extends Page {
         this.mMsgTextView.text = "";
         this.mMsgTextView.fontSize = "12sp";
 
-        log.D("test", "-------------------ConfigStore----------------");
         //消息框设置
         let cs = ConfigStore.getInstance("settings");
         var initstate = cs.get("key", true);
 
         if (initstate === true) {
-            log.D("test", "Switch初始化为开");
             this.mMsgTextView.visibility = View.Visibility.Visible;
 
         } else {
-            log.D("test", "Sitch初始化为关");
             this.mMsgTextView.visibility = View.Visibility.Hidden;
         }
-        log.D("test", "-------------------ConfigStore End----------------");
 
         this.mMsgTextView.verticalAlign = TextView.VerticalAlign.Middle;
         this.mMsgTextView.elideMode = TextView.ElideMode.ElideRight;
@@ -350,38 +383,82 @@ class Main extends Page {
         inputLayout.spacing = 0;
         this.inputView.layout = inputLayout;
 
-        //表情框图
-        let ImagePath = resource.getImageSrc("/images/qqface1.png");
-        let faceView = new ImageView();
-        faceView.id = "iiiv";
-        faceView.src = ImagePath;
+        // 表情框图
+        // let ImagePath = resource.getImageSrc("/images/qqface1.png");
+        // let faceView = new ImageView();
+        // faceView.id = "iiiv";
+        // faceView.src = ImagePath;
 
+        // log.D(TAG, "start!!");
         let popupCompositeView = new PopupCompositeView();
-        popupCompositeView.width = faceView.width;
-        popupCompositeView.height = faceView.height;
-        popupCompositeView.addChild(faceView);
-
-
-        faceView.addEventListener("touchstart", (e) =>
-        {
-            let _touchStartX = e._touches[0].clientX;
-            let _touchStartY = e._touches[0].clientY;
-            log.D("test","try WxFace");
-            let wxface =new WxFace(_touchStartX,_touchStartY);
-            // let msg = wxface.jugeFaceMsg(_touchStartX,_touchStartY);
-            // let msg = this.jugeFace(_touchStartX,_touchStartY);
-            log.D("test","this is trying to sending");
-            log.D("test",wxface.msg);
-            this.mWxModule.sendText(this.ChatWithUserName, wxface.msg);
-
-            //测试单个表情读取，view_test布局有添加。
-
-            // log.D("test","try to show smile");
-            // let wxface1 = new WxFace("[微笑]");
-            // this.view_test = wxface1.faceVIew;
-            // this.view_test.id = "test";
-            // this.mMainView.addChild(this.view_test);
+        popupCompositeView.width = this.mChatLV.width;
+        popupCompositeView.height = 240;
+        // popupCompositeView.addChild(faceView);
+        var rl = new RelativeLayout();
+        rl.setLayoutParam(0, "align", {
+            top: "parent",
+            left: "parent",
+            bottom: "parent",
+            right: "parent"
         });
+        popupCompositeView.layout = rl;
+
+        // log.D(TAG,"had set popupCompositeView");
+
+        let faceAdapter = new ImgeGridAdapter();
+        // log.D(TAG,"try to new GridView ");
+        let faceGridView = new GridView();
+        // log.D(TAG,"try to set data ");
+        faceAdapter.data = faceAdapter.mockData();
+        // log.D(TAG,"have setted data ");
+        faceGridView.width = this.mChatLV.width;
+
+        faceGridView.adapter = faceAdapter;
+
+        // log.D(TAG,"had set adapter");
+
+        popupCompositeView.addChild(faceGridView);
+
+        let LVIsSmall = false;
+
+        popupCompositeView.addEventListener("show", () => {
+            log.D(TAG ,"popupCompositeView has showed!");
+        });
+
+        popupCompositeView.addEventListener("close", () => {
+            log.D(TAG ,"popupCompositeView has closed!");
+            if(LVIsSmall){
+                this.mChatLV.height += popupCompositeView.height;
+                LVIsSmall = false;
+            }
+        });
+
+        faceGridView.on("itemselect", (itemView, position) => {
+             let wxface =new WxFace(position , itemView);
+             this.mWxModule.sendText(this.ChatWithUserName, wxface.msg);
+        });
+
+        // faceView.addEventListener("touchstart", (e) =>
+        // {
+        //     let _touchStartX = e._touches[0].clientX;
+        //     let _touchStartY = e._touches[0].clientY;
+        //     log.D("test","try WxFace");
+        //     let wxface =new WxFace(_touchStartX,_touchStartY);
+        //     // let msg = wxface.jugeFaceMsg(_touchStartX,_touchStartY);
+        //     // let msg = this.jugeFace(_touchStartX,_touchStartY);
+        //     log.D("test","this is trying to sending");
+        //     log.D("test",wxface.msg);
+        //     this.mWxModule.sendText(this.ChatWithUserName, wxface.msg);
+        //
+        //     //测试单个表情读取，view_test布局有添加。
+        //
+        //     // log.D("test","try to show smile");
+        //     // let wxface1 = new WxFace("[微笑]");
+        //     // this.view_test = wxface1.faceVIew;
+        //     // this.view_test.id = "test";
+        //     // this.mMainView.addChild(this.view_test);
+        // });
+
         let emojiBtn = new Button();
         emojiBtn.sizeType = Button.SizeType.Small;
         emojiBtn.buttonColor = "rgba(123,127,141,0.6)";
@@ -400,15 +477,56 @@ class Main extends Page {
                 top += parent.top;
                 parent = parent.parent;
             }
-            top -= emojiBtn.height + popupCompositeView.height;
+            top -= popupCompositeView.height - emojiBtn.height;
+            // top -= popupCompositeView.height;
             log.D("test","try to show popupCompositeView");
             log.D("test","top：" + top);
+
+            if(!LVIsSmall){
+                this.mChatLV.height -= popupCompositeView.height;
+                this.mChatLV.arriveAt(this.chatAdapter.getCount() - 1);
+                LVIsSmall = true;
+            }
+
             popupCompositeView.animation_top = top;
             log.D("test" ,"animation_top:" + popupCompositeView.animation_top);
             popupCompositeView.show(left , top);
         });
 
+        let popupCompositeViewText = new PopupCompositeView();
+        popupCompositeViewText.width = this.mChatLV.width;
+        popupCompositeViewText.height = popupCompositeView.height;
+        // popupCompositeView.addChild(faceView);
+        var rl = new RelativeLayout();
+        rl.setLayoutParam(0, "align", {
+            top: "parent",
+            left: "parent",
+            bottom: "parent",
+            right: "parent"
+        });
+        popupCompositeViewText.layout = rl;
 
+        this.defaultMsg = ["[微笑]" , "[呲牙]" , "[得意]" , "[调皮]" , "请发送位置,我马上到.","你好.","老地方见", "好的，我知道了.",
+         "我正在開車呢，稍後給您回電話.","^_^我正在路上."];
+        let TextAdapter = new TextGridAdapter();
+        TextAdapter.data = this.defaultMsg;
+        let TextGridView = new GridView();
+        TextGridView.width = this.mChatLV.width;
+        TextGridView.adapter = TextAdapter;
+
+        popupCompositeViewText.addChild(TextGridView);
+
+        popupCompositeViewText.addEventListener("show", () => {
+            log.D(TAG ,"popupCompositeView has showed!");
+        });
+
+        popupCompositeViewText.addEventListener("close", () => {
+            log.D(TAG ,"popupCompositeView has closed!");
+            if(LVIsSmall){
+                this.mChatLV.height += popupCompositeViewText.height;
+                LVIsSmall = false;
+            }
+        });
 
         let textInputBtn = new Button();
         textInputBtn.sizeType = Button.SizeType.Small;
@@ -417,35 +535,48 @@ class Main extends Page {
         textInputBtn.width = this.inputView.width / 2;
         textInputBtn.text = "默认输入";
         textInputBtn.on("tap", () => {
-            let left = textInputBtn.left;
-            let top = textInputBtn.top;
-            let parent = textInputBtn.parent;
+            let left = emojiBtn.left;
+            let top = emojiBtn.top;
+            let parent = emojiBtn.parent;
             while (parent) {
                 left += parent.left;
                 top += parent.top;
                 parent = parent.parent;
             }
-            top -= textInputBtn.height + this.textInuputMenu.height;
-            this.textInuputMenu.show(left, top);
+            top -= popupCompositeView.height - emojiBtn.height;
+            if(!LVIsSmall){
+                this.mChatLV.height -= popupCompositeViewText.height;
+                this.mChatLV.arriveAt(this.chatAdapter.getCount() - 1);
+                LVIsSmall = true;
+            }
+            popupCompositeViewText.animation_top = top;
+            log.D("test" ,"animation_top:" + popupCompositeViewText.animation_top);
+            popupCompositeViewText.show(left , top);
         });
 
-        this.defaultMsg = ["好的，我知道了.", "我正在開車呢，稍後給您回電話.", "[微笑]"];
-        this.textInuputMenu = new PopupMenu();
-        this.textInuputMenu.width = textInputBtn.width;
-        let textInputItems = [
-            new PopupMenu.PopupMenuItem(this.defaultMsg[0]),
-            new PopupMenu.PopupMenuItem(this.defaultMsg[1]),
-            new PopupMenu.PopupMenuItem(this.defaultMsg[2])
-        ];
-        for (let item of textInputItems) {
-            this.textInuputMenu.addChild(item);
-        }
-        this.textInuputMenu.on("result", (index) => {
-            log.D(TAG, "this.ChatWithUserName = " + this.ChatWithUserName);
-            if (this.ChatWithUserName) {
-                this.mWxModule.sendText(this.ChatWithUserName, this.defaultMsg[index]);
-            }
+
+        TextGridView.on("itemselect", (itemView, position) => {
+             this.mWxModule.sendText(this.ChatWithUserName, itemView.text);
         });
+
+
+
+        // this.textInuputMenu = new PopupMenu();
+        // this.textInuputMenu.width = textInputBtn.width;
+        // let textInputItems = [
+        //     new PopupMenu.PopupMenuItem(this.defaultMsg[0]),
+        //     new PopupMenu.PopupMenuItem(this.defaultMsg[1]),
+        //     new PopupMenu.PopupMenuItem(this.defaultMsg[2])
+        // ];
+        // for (let item of textInputItems) {
+        //     this.textInuputMenu.addChild(item);
+        // }
+        // this.textInuputMenu.on("result", (index) => {
+        //     log.D(TAG, "this.ChatWithUserName = " + this.ChatWithUserName);
+        //     if (this.ChatWithUserName) {
+        //         this.mWxModule.sendText(this.ChatWithUserName, this.defaultMsg[index]);
+        //     }
+        // });
 
         this.inputView.visibility = View.Visibility.Hidden;
         this.inputView.addChild(emojiBtn);
@@ -464,7 +595,7 @@ class Main extends Page {
         this.mMainLayout.setLayoutParam("chatlv", "align", { left: { target: "contactlv", side: "right" }, top: { target: "titleview", side: "bottom" } });
         this.mMainLayout.setLayoutParam("msgtv", "align", { top: "parent", center: "parent" });
         this.mMainLayout.setLayoutParam("loading", "align", { center: "parent", middle: "parent" });
-        this.mMainLayout.setLayoutParam("input_view", "align", { left: { target: 0, side: "right" }, bottom: "parent" });
+        this.mMainLayout.setLayoutParam("input_view", "align", { left: { target: "contactlv", side: "right" }, top: { target: "chatlv", side: "bottom"} });
         this.mMainLayout.setLayoutParam("contactlv", "margin", { top: this.window.statusBarHeight });
         this.mMainLayout.setLayoutParam("titleview", "margin", { top: this.window.statusBarHeight });
         this.mMainLayout.setLayoutParam("chatlv", "margin", { top: 10, bottom: Contants.INPUT_BAR_HEIGHT });
@@ -520,12 +651,21 @@ class Main extends Page {
             link.data = JSON.stringify(data);
             Page.getInstance().sendLink(link);
         } else if (itemView.animationView) {
-            this.page.mWxModule.getVoice(itemView.msgInfo.MsgId, (path) => {
-                this.page.playingAnimView = itemView.animationView;
-                this.page.playVoice.call(this.page, path);
-                itemView.animationView.start();
-            });
+            // this.page.mWxModule.getVoice(itemView.msgInfo.MsgId, (path) => {
+            //     this.page.playingAnimView = itemView.animationView;
+            //     this.page.playVoice.call(this.page, path);
+            //     itemView.animationView.start();
+            // });
+            self.doVoiceMsgPlay(itemView);
         }
+    }
+
+    doVoiceMsgPlay(itemView) {
+        self.mWxModule.getVoice(itemView.msgInfo.MsgId, (path) => {
+            self.playingAnimView = itemView.animationView;
+            self.playVoice.call(self, path);
+            itemView.animationView.start();
+        });
     }
 
     playVoice(path) {
@@ -553,7 +693,7 @@ class Main extends Page {
         this.sMediaPlayer = null;
     }
 
-    initListener(){
+    initListener() {
         this.sMediaPlayer.on("prepared", function (result) {
             log.D(TAG, "MediaPlayer prepared.");
             this.start();
@@ -612,13 +752,22 @@ class Main extends Page {
     refreshMsgPart(FromUserName) {
         if (!this.isLopped) return;
         // log.D(TAG, "onContactLvSelect =" + this);
-        log.I(TAG, "refreshMsgPart.. = " + FromUserName);
+        // log.I(TAG, "refreshMsgPart.. = " + FromUserName);
         this.mWxModule.getMsgListByWithUserName(FromUserName).then((ret) => {
-            log.I(TAG, ret);
-            log.I(TAG, ret.length);
+            // log.I(TAG, ret);
+            // log.I(TAG, ret.length);
             this.chatAdapter.data = this.getMsgList(ret);
             this.chatAdapter.onDataChange();
             this.mChatLV.arriveAt(this.chatAdapter.getCount() - 1);
+
+            log.D(TAG, "this.chatAdapter.getCount() = " + this.chatAdapter.getCount());
+            if (this.chatAdapter.getCount() >= 1) {
+                let itemView = this.mChatLV.getChild();
+                log.D(TAG, "itemView.animationView = " + itemView.animationView);
+                if (itemView.animationView) {
+                    this.doVoiceMsgPlay(itemView);
+                }
+            }
         });
     }
 
