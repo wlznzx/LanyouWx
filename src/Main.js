@@ -39,6 +39,8 @@ const TextGridAdapter = require("./adapter/TextGridAdapter");
 
 const TAG = "WebWx_Main";
 let self;
+let timeout = null;
+
 class Main extends Page {
 
     onCreate() {
@@ -98,8 +100,6 @@ class Main extends Page {
             let bkground = resource.getImageSrc("background.png");
             loginView.background = bkground;
 
-
-
             //富文本控件内容设置
             let richTextView = rootView.findViewById("rt");
             let logo = resource.getImageSrc("logo.png");
@@ -109,41 +109,71 @@ class Main extends Page {
         });
     }
 
+    showTips() {
+        if (timeout !== null && timeout !== undefined) {
+            clearTimeout(timeout);
+        }
+        timeout = setTimeout(function () {
+            self.mMsgTextView.visibility = View.Visibility.Hidden;
+        }, 2000);
+    }
+
+    isBroadcast() {
+        var cs = ConfigStore.getInstance("settings");
+        var initstate = cs.get("key", true);
+        return initstate;
+    }
+
     initCallBack() {
         this.mWxModule.on("friend", (msg) => {
-            if (msg !== null && msg.Content !== "" && this.isLopped) {
-                /**/
-                let displayMsg = "新消息 ";
-                if (msg.Member.RemarkName !== "") {
-                    displayMsg += msg.Member.RemarkName;
-                } else {
-                    displayMsg += msg.Member.NickName;
+            if (self.isBroadcast()) {
+                if (msg !== null && msg.Content !== "" && this.isLopped) {
+                    /**/
+                    let displayMsg = "新消息 ";
+                    if (msg.Member.RemarkName !== "") {
+                        displayMsg += msg.Member.RemarkName;
+                    } else {
+                        displayMsg += msg.Member.NickName;
+                    }
+                    displayMsg += ": " + msg.Content;
+                    this.mMsgTextView.visibility = View.Visibility.Visible;
+                    this.mMsgTextView.text = displayMsg;
+                    log.D(TAG, "displayMsg = " + displayMsg);
+                    self.showTips();
                 }
-                displayMsg += ": " + msg.Content;
-                this.mMsgTextView.text = displayMsg;
-                log.D(TAG, "displayMsg = " + displayMsg);
             }
         });
+
         this.mWxModule.on("group", (msg) => {
-            if (msg !== null && msg.Content !== "" && this.isLopped) {
-                this.mMsgTextView.text = "来自群 ${msg.Group.NickName} 的消息${msg.GroupMember.DisplayName || msg.GroupMember.NickName}: ${msg.Content}";
-                let displayMsg = "来自群 " + msg.Group.NickName + " 的消息";
-                if (msg.GroupMember.DisplayName !== "") {
-                    displayMsg += msg.GroupMember.DisplayName;
-                } else {
-                    displayMsg += msg.GroupMember.NickName;
+            if (self.isBroadcast()) {
+                if (msg !== null && msg.Content !== "" && this.isLopped) {
+                    this.mMsgTextView.text = "来自群 ${msg.Group.NickName} 的消息${msg.GroupMember.DisplayName || msg.GroupMember.NickName}: ${msg.Content}";
+                    let displayMsg = "来自群 " + msg.Group.NickName + " 的消息";
+                    if (msg.GroupMember.DisplayName !== "") {
+                        displayMsg += msg.GroupMember.DisplayName;
+                    } else {
+                        displayMsg += msg.GroupMember.NickName;
+                    }
+                    displayMsg += ": " + msg.Content;
+                    this.mMsgTextView.text = displayMsg;
+                    log.D(TAG, "displayMsg = " + displayMsg);
+                    self.showTips();
                 }
-                displayMsg += ": " + msg.Content;
-                this.mMsgTextView.text = displayMsg;
-                log.D(TAG, "displayMsg = " + displayMsg);
             }
         });
 
         this.mWxModule.on("msg", (msg) => {
             if (this.ChatWithUserName && msg.WithUserName === this.ChatWithUserName) {
-                log.D(TAG, "do refreshMsgPart");
                 this.refreshMsgPart(this.ChatWithUserName);
-
+                if (self.isBroadcast() && msg.MsgType == "34") {
+                    if (self.sMediaPlayer) {
+                        log.D(TAG, "do voiseBroadcastList push.");
+                        self.voiseBroadcastList.push(msg);
+                    } else {
+                        log.D(TAG, "do doBroadcast.");
+                        self.doBroadcast(msg);
+                    }
+                }
             }
             this.refreshContactPart(msg.WithUserName, msg.IsReceive);
         });
@@ -153,6 +183,7 @@ class Main extends Page {
         });
         this.mWxModule.on("logged", () => {
             // this.QRCodeIV.visibility = View.Visibility.Hidden;
+            this.TipsTV.width = 120;
             this.TipsTV.text = "已登录!";
             // let isLooped = this.mWxModule.isLooped();
             // log.I(TAG , "mWxModule.isLooped() = " + isLooped);
@@ -169,7 +200,6 @@ class Main extends Page {
             log.D(TAG, "getRecentContacts..");
             this.mWxModule.getRecentContacts().then((result) => {
                 this.mContactLV.ContactsList = result;
-                log.D(TAG, "position = " + result[1].Name);
                 this.initDatas(result);
             });
         });
@@ -202,25 +232,11 @@ class Main extends Page {
         this.mWxModule.doRun();
     }
 
-    doBroadcast() {
-        if (this.isBroadcasting) {
-            return;
-        }
-        this.isBroadcasting = true;
-        let msg = this.voiseBroadcastList.shift();
-        while (msg) {
-            if (this.ChatWithUserName && msg.WithUserName === this.ChatWithUserName) {
-                // 播报;
-                this.mWxModule.getVoice(msg.MsgId, (path) => {
-                    this.playVoice.call(this, path);
-                });
-                msg = this.voiseBroadcastList.shift();
-            } else {
-                // 清空list；
-                this.voiseBroadcastList = new Array();
-            }
-        }
-        this.isBroadcasting = false;
+    doBroadcast(msg) {
+        self.chatAdapter.playingMsgId = msg.MsgId;
+        self.mWxModule.getVoice(msg.MsgId, (path) => {
+            self.playVoice(path);
+        });
     }
 
     initView() {
@@ -260,7 +276,7 @@ class Main extends Page {
         optionsBtn.width = 40;
 
 
-        let touchRegion = [new Rectangle(-100,-100,-200,-200),new Rectangle(-100, -100, 200, 200)];
+        let touchRegion = [new Rectangle(-100, -100, -200, -200), new Rectangle(-100, -100, 200, 200)];
         optionsBtn.touchRegion = touchRegion;
         optionsBtn.on("tap", () => {
             let left = optionsBtn.left;
@@ -327,7 +343,7 @@ class Main extends Page {
         this.mTitleView.addChild(optionsBtn);
         this.mTitleView.addChild(divider);
         titleLayout.setLayoutParam(0, "align", { center: "parent", middle: "parent" });
-    //    titleLayout.setLayoutParam(0, "margin", { right: 160});
+        //    titleLayout.setLayoutParam(0, "margin", { right: 160});
         titleLayout.setLayoutParam(1, "align", { right: "parent", middle: "parent" });
         titleLayout.setLayoutParam(1, "margin", { right: 15 });
         titleLayout.setLayoutParam("divider", "align", {
@@ -351,21 +367,14 @@ class Main extends Page {
         this.mMsgTextView.id = "msgtv";
         this.mMsgTextView.width = width / 2;
         this.mMsgTextView.height = 60; // top: "parent",middle: "parent"
-        this.mMsgTextView.background = "#D9D9D9";
+        this.mMsgTextView.background = "#F2F2F2";
         this.mMsgTextView.opacity = 0.6;
         this.mMsgTextView.text = "";
-        this.mMsgTextView.fontSize = "12sp";
+        this.mMsgTextView.fontSize = "15sp";
 
-        //消息框设置
-        let cs = ConfigStore.getInstance("settings");
-        var initstate = cs.get("key", true);
 
-        if (initstate === true) {
-            this.mMsgTextView.visibility = View.Visibility.Visible;
+        this.mMsgTextView.visibility = View.Visibility.Hidden;
 
-        } else {
-            this.mMsgTextView.visibility = View.Visibility.Hidden;
-        }
 
         this.mMsgTextView.verticalAlign = TextView.VerticalAlign.Middle;
         this.mMsgTextView.elideMode = TextView.ElideMode.ElideRight;
@@ -422,20 +431,20 @@ class Main extends Page {
         let LVIsSmall = false;
 
         popupCompositeView.addEventListener("show", () => {
-            log.D(TAG ,"popupCompositeView has showed!");
+            log.D(TAG, "popupCompositeView has showed!");
         });
 
         popupCompositeView.addEventListener("close", () => {
-            log.D(TAG ,"popupCompositeView has closed!");
-            if(LVIsSmall){
+            log.D(TAG, "popupCompositeView has closed!");
+            if (LVIsSmall) {
                 this.mChatLV.height += popupCompositeView.height;
                 LVIsSmall = false;
             }
         });
 
         faceGridView.on("itemselect", (itemView, position) => {
-             let wxface =new WxFace(position , itemView);
-             this.mWxModule.sendText(this.ChatWithUserName, wxface.msg);
+            let wxface = new WxFace(position, itemView);
+            this.mWxModule.sendText(this.ChatWithUserName, wxface.msg);
         });
 
         // faceView.addEventListener("touchstart", (e) =>
@@ -479,18 +488,14 @@ class Main extends Page {
             }
             top -= popupCompositeView.height - emojiBtn.height;
             // top -= popupCompositeView.height;
-            log.D("test","try to show popupCompositeView");
-            log.D("test","top：" + top);
-
-            if(!LVIsSmall){
+            if (!LVIsSmall) {
                 this.mChatLV.height -= popupCompositeView.height;
                 this.mChatLV.arriveAt(this.chatAdapter.getCount() - 1);
                 LVIsSmall = true;
             }
 
             popupCompositeView.animation_top = top;
-            log.D("test" ,"animation_top:" + popupCompositeView.animation_top);
-            popupCompositeView.show(left , top);
+            popupCompositeView.show(left, top);
         });
 
         let popupCompositeViewText = new PopupCompositeView();
@@ -506,8 +511,9 @@ class Main extends Page {
         });
         popupCompositeViewText.layout = rl;
 
-        this.defaultMsg = ["[微笑]" , "[呲牙]" , "[得意]" , "[调皮]" , "请发送位置,我马上到.","你好.","老地方见", "好的，我知道了.",
-         "我正在開車呢，稍後給您回電話.","^_^我正在路上."];
+        this.defaultMsg = ["[微笑]", "[呲牙]", "[得意]", "[调皮]", "请发送位置,我马上到.", "你好.", "老地方见", "好的，我知道了.",
+            "我正在開車呢，稍後給您回電話.", "^_^我正在路上."
+        ];
         let TextAdapter = new TextGridAdapter();
         TextAdapter.data = this.defaultMsg;
         let TextGridView = new GridView();
@@ -517,12 +523,12 @@ class Main extends Page {
         popupCompositeViewText.addChild(TextGridView);
 
         popupCompositeViewText.addEventListener("show", () => {
-            log.D(TAG ,"popupCompositeView has showed!");
+            log.D(TAG, "popupCompositeView has showed!");
         });
 
         popupCompositeViewText.addEventListener("close", () => {
-            log.D(TAG ,"popupCompositeView has closed!");
-            if(LVIsSmall){
+            log.D(TAG, "popupCompositeView has closed!");
+            if (LVIsSmall) {
                 this.mChatLV.height += popupCompositeViewText.height;
                 LVIsSmall = false;
             }
@@ -544,19 +550,19 @@ class Main extends Page {
                 parent = parent.parent;
             }
             top -= popupCompositeView.height - emojiBtn.height;
-            if(!LVIsSmall){
+            if (!LVIsSmall) {
                 this.mChatLV.height -= popupCompositeViewText.height;
                 this.mChatLV.arriveAt(this.chatAdapter.getCount() - 1);
                 LVIsSmall = true;
             }
             popupCompositeViewText.animation_top = top;
-            log.D("test" ,"animation_top:" + popupCompositeViewText.animation_top);
-            popupCompositeViewText.show(left , top);
+            log.D("test", "animation_top:" + popupCompositeViewText.animation_top);
+            popupCompositeViewText.show(left, top);
         });
 
 
         TextGridView.on("itemselect", (itemView, position) => {
-             this.mWxModule.sendText(this.ChatWithUserName, itemView.text);
+            this.mWxModule.sendText(this.ChatWithUserName, itemView.text);
         });
 
 
@@ -593,13 +599,13 @@ class Main extends Page {
         this.mMainLayout.setLayoutParam("contactlv", "align", { left: "parent", top: "parent" });
         this.mMainLayout.setLayoutParam("titleview", "align", { left: { target: "contactlv", side: "right" }, top: "parent" });
         this.mMainLayout.setLayoutParam("chatlv", "align", { left: { target: "contactlv", side: "right" }, top: { target: "titleview", side: "bottom" } });
-        this.mMainLayout.setLayoutParam("msgtv", "align", { top: "parent", center: "parent" });
+        this.mMainLayout.setLayoutParam("msgtv", "align", { top: "parent", left: "parent" });
         this.mMainLayout.setLayoutParam("loading", "align", { center: "parent", middle: "parent" });
-        this.mMainLayout.setLayoutParam("input_view", "align", { left: { target: "contactlv", side: "right" }, top: { target: "chatlv", side: "bottom"} });
+        this.mMainLayout.setLayoutParam("input_view", "align", { left: { target: "contactlv", side: "right" }, top: { target: "chatlv", side: "bottom" } });
         this.mMainLayout.setLayoutParam("contactlv", "margin", { top: this.window.statusBarHeight });
         this.mMainLayout.setLayoutParam("titleview", "margin", { top: this.window.statusBarHeight });
         this.mMainLayout.setLayoutParam("chatlv", "margin", { top: 10, bottom: Contants.INPUT_BAR_HEIGHT });
-        this.mMainLayout.setLayoutParam("msgtv", "margin", { top: this.window.statusBarHeight });
+        this.mMainLayout.setLayoutParam("msgtv", "margin", { top: this.window.statusBarHeight, left: 480 });
         this.window.addChild(this.mMainView);
         _MyPopupMenuItem.mMsgTextView = this.mMsgTextView;
     }
@@ -607,7 +613,7 @@ class Main extends Page {
     initDatas(contacts_data) {
         this.mMsgTextView.text = "數據加載中...";
 
-        log.I(TAG, "contacts_data = " + contacts_data.length);
+        // log.I(TAG, "contacts_data = " + contacts_data.length);
         this.mContactAdapter = new ContactAdapter(this.mWxModule);
         this.mContactAdapter.data = contacts_data;
         this.mContactLV.adapter = this.mContactAdapter;
@@ -625,10 +631,10 @@ class Main extends Page {
         // log.D(TAG, "position = " + this.ContactsList[position].Name);
         // log.D(TAG, itemView);
         if (this.currentItem) {
-            this.currentItem.background = "#FFFFFF";
+            this.currentItem.background = "#F2F2F2";
         }
         this.page.contactNameTV.text = this.ContactsList[position].Name;
-        itemView.background = "#F2F2F2";
+        itemView.background = "#d3d3d3";
         this.page.ChatWithUserName = this.ContactsList[position].UserName;
         this.currentItem = itemView;
         this.page.refreshMsgPart.call(this.page, this.ContactsList[position].UserName);
@@ -664,6 +670,7 @@ class Main extends Page {
         self.mWxModule.getVoice(itemView.msgInfo.MsgId, (path) => {
             self.playingAnimView = itemView.animationView;
             self.playVoice.call(self, path);
+            log.D(TAG, "animationView do start.");
             itemView.animationView.start();
         });
     }
@@ -673,7 +680,6 @@ class Main extends Page {
         if (this.sMediaPlayer) {
             return;
         }
-        log.D(TAG, "Go playVoice");
         try {
             this.sMediaPlayer = new MediaPlayer(MediaPlayer.PlayerType.LOWPOWERAUDIO);
             this.initListener();
@@ -706,6 +712,25 @@ class Main extends Page {
                 self.playingAnimView.stop();
             }
             self.destroyPlayer();
+            self.stopVoiceAnimation();
+            self.chatAdapter.playingMsgId = 10086;
+
+            // log.D(TAG, "-----voiseBroadcastList-----");
+            // log.D(TAG, self.voiseBroadcastList);
+
+            if (self.voiseBroadcastList) {
+                let msg = self.voiseBroadcastList.shift();
+                if (msg) {
+                    if (self.ChatWithUserName && msg.WithUserName === self.ChatWithUserName) {
+                        // 播报;
+                        self.doBroadcast(msg);
+                        self.startVoiceAnimation();
+                    } else {
+                        // 清空list；
+                        self.voiseBroadcastList = new Array();
+                    }
+                }
+            }
         });
 
         this.sMediaPlayer.on("started", function () {
@@ -738,13 +763,39 @@ class Main extends Page {
                 break;
             }
         }
-        log.D(TAG, "refreshContactPart index = " + index);
         if (index) {
             let _contact = this.mContactLV.ContactsList.splice(index, 1);
             if (pIsReceive) _contact[0].hasNewMsg = true;
             this.mContactLV.ContactsList.unshift(_contact[0]);
             this.mContactAdapter.data = this.mContactLV.ContactsList;
             this.mContactAdapter.onDataChange();
+        }
+    }
+
+    startVoiceAnimation() {
+        for (var i = 0; i < (self.chatAdapter.getCount() - 1); i++) {
+            // log.D(TAG, this.mChatLV.obtainView(i));
+            let itemView = self.mChatLV.getChildAt(i);
+            // log.D(TAG, "startVoiceAnimation index = " + itemView);
+            if (itemView.msgInfo) {
+                if (itemView.msgInfo.MsgId == self.chatAdapter.playingMsgId) {
+                    itemView.animationView.start();
+                }
+            }
+        }
+    }
+
+    stopVoiceAnimation() {
+        for (var i = 0; i < (self.chatAdapter.getCount() - 1); i++) {
+            // log.D(TAG, this.mChatLV.obtainView(i));
+            let itemView = self.mChatLV.getChildAt(i);
+            if (itemView.msgInfo) {
+                log.D(TAG, "MsgId = " + itemView.msgInfo.MsgId + " playingMsgId = " + self.chatAdapter.playingMsgId);
+                if (itemView.msgInfo.MsgId == self.chatAdapter.playingMsgId) {
+                    log.D(TAG, "do stop.");
+                    itemView.animationView.stop();
+                }
+            }
         }
     }
 
@@ -760,14 +811,20 @@ class Main extends Page {
             this.chatAdapter.onDataChange();
             this.mChatLV.arriveAt(this.chatAdapter.getCount() - 1);
 
-            log.D(TAG, "this.chatAdapter.getCount() = " + this.chatAdapter.getCount());
-            if (this.chatAdapter.getCount() >= 1) {
-                let itemView = this.mChatLV.getChild();
-                log.D(TAG, "itemView.animationView = " + itemView.animationView);
-                if (itemView.animationView) {
-                    this.doVoiceMsgPlay(itemView);
-                }
-            }
+            // log.D(TAG, "this.chatAdapter.getCount() = " + this.chatAdapter.getCount());
+            // if (this.chatAdapter.getCount() >= 2) {
+            //     log.D(TAG, "go get lastChild.");
+            //     var itemView = this.mChatLV.obtainView(this.chatAdapter.getCount() - 2);
+            //     log.D(TAG, "itemView.animationView = " + itemView.animationView);
+            //     if (itemView.animationView) {
+            //         if(self.sMediaPlayer) {
+            //             // this.voiseBroadcastList.push();
+            //         } else {
+            //             self.doVoiceMsgPlay(itemView);
+            //         }
+            //     }
+            // }
+            // self.startVoiceAnimation();
         });
     }
 

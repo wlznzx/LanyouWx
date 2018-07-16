@@ -28,7 +28,7 @@ class ChatAdapter extends BaseAdapter {
     }
 
     createItem(position, convertView) {
-        if (this.data[position].MsgType == "3") {
+        if (this.data[position].MsgType == "3" || this.data[position].MsgType == "47") {
             convertView = this.buildImgLayout(position);
         } else if (this.data[position].MsgType == "34") {
             convertView = this.buildVoiceMsgLayout(position);
@@ -89,7 +89,7 @@ class ChatAdapter extends BaseAdapter {
 
 
         tv.id = "content";
-        tv.fontSize = "17sp";
+        tv.fontSize = "12sp";
         tv.fontWeight = TextView.FontWeight.Light;
         tv.verticalAlign = TextView.VerticalAlign.Middle;
         tv.maxWidth = 350;
@@ -166,7 +166,7 @@ class ChatAdapter extends BaseAdapter {
                     log.D("test" , "src:" + src);
 
                     str += content.slice(index,content.indexOf(array_face[i], index));
-                    str += "<img src=\"" + src +"\"  width=\"17sp\" height=\"17sp\" align=\"middle\"/>";
+                    str += "<img src=\"" + src +"\"  width=\"30\" height=\"30\" align=\"middle\"/>";
 
                 }else{
                     str += content.slice(index , content.indexOf(array_face[i] , index) + array_face[i].length);
@@ -342,7 +342,7 @@ class ChatAdapter extends BaseAdapter {
         voiceLenghtTv.id = "voice_lenght_tv";
         voiceLenghtTv.width = 20;
         voiceLenghtTv.height = 15;
-        voiceLenghtTv.fontSize = "10sp";
+        voiceLenghtTv.fontSize = "12sp";
         voiceLenghtTv.Color = "gray";
         voiceLenghtTv.text = VoicePlayTimes + "''";
 
@@ -359,7 +359,7 @@ class ChatAdapter extends BaseAdapter {
             layout.setLayoutParam("avatar", "margin", { right: screen.getPixelByDp(30) });
             layout.setLayoutParam("anim_view", "margin", { right: screen.getPixelByDp(30) });
             layout.setLayoutParam("bg_view", "margin", { right: screen.getPixelByDp(15) });
-            layout.setLayoutParam("voice_lenght_tv", "margin", { right: screen.getPixelByDp(10) });
+            layout.setLayoutParam("voice_lenght_tv", "margin", { right: screen.getPixelByDp(30) });
             bgView.background = "#b2e281";
             animationView.src = resource.getImageSrc("./images/voice_self.png");
         } else {
@@ -395,6 +395,10 @@ class ChatAdapter extends BaseAdapter {
         ret.animationView = animationView;
         ret.msgInfo = msgInfo;
         ret.MsgType = this.data[position].MsgType;
+
+        if(this.playingMsgId == msgInfo.MsgId){
+            animationView.start();
+        }
         return ret;
     }
 

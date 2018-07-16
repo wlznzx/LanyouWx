@@ -31,29 +31,28 @@ class MyPopupMenuItem extends PopupMenuItem {
         sw.on("valuechanged", (value) => {
             //sw.text = "value=" + value + ":";
             if (sw.value === false) {
-
                 this.mMsgTextView.visibility = View.Visibility.Hidden;
+      
                 state = false;
                 cs.put("key", state);
-                cs.apply();
+                //cs.apply();
                 log.D("test" , "Switch修改为关闭写入");
-                // cs.apply((err) => {
-                //     if (err !== null) {
-                //
-                //     }
-                // });
+                cs.apply((err) => {
+                    if (err !== null) {
+
+                    }
+                });
             } else {
                 state = true;
-
-                this.mMsgTextView.visibility = View.Visibility.Visible;
+              //  this.mMsgTextView.visibility = View.Visibility.Visible;
                 cs.put("key", state);
-                cs.apply();
+                //cs.apply();
                 log.D("test" , "Switch修改为打开写入");
-                // cs.apply((err) => {
-                //     if (err !== null) {
-                //
-                //     }
-                // });
+                cs.apply((err) => {
+                    if (err !== null) {
+
+                    }
+                });
             }
         });
 

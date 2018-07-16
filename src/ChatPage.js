@@ -21,7 +21,7 @@ const AudioManager = require("yunos/device/AudioManager");
 const Image = require("yunos/multimedia/Image");
 const Bitmap = require("yunos/graphics/Bitmap");
 const MediaPlayer = require("yunos/multimedia/MediaPlayer");
-const TTSPlayer = require("yunos/speech/TTSPlayer");
+// const TTSPlayer = require("yunos/speech/TTSPlayer");
 
 const TAG = "WebWx_ChatPage";
 
@@ -132,25 +132,6 @@ class ChatPage extends Page {
         this.mMainLayout.setLayoutParam(1, "margin", { top: this.window.statusBarHeight });
         this.mMainLayout.setLayoutParam(2, "margin", { bottom: 60 });
         this.window.addChild(this.mMainView);
-
-
-        var ttsPlayer = new TTSPlayer();
-
-        ttsPlayer.on("initialized", function () {
-            ttsPlayer.play("我是张桓，我爱济源;");
-        });
-
-        ttsPlayer.on("begin", function () {
-            // 开始进行语音播报
-        });
-
-        ttsPlayer.on("end", function () {
-            // 语音播报结束
-        });
-
-        ttsPlayer.on("error", function (errCode, description) {
-        });
-
     }
 
     initDatas() {
@@ -215,6 +196,9 @@ class ChatPage extends Page {
             // 发生了错误，可以根据具体的错误码进行相应的处理
             log.D(TAG, "MediaPlayer error.");
         });
+
+        log.D(TAG, "this.mChatLV.lastChild");
+        log.D(TAG, this.mChatLV.obtainView(0));
     }
 
     playVoice(path) {

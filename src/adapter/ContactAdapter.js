@@ -113,7 +113,9 @@ class ContactAdapter extends BaseAdapter {
         pointIv.src = resource.getImageSrc("images/red_point.png");
         ret.addChild(pointIv);
 
-        ret.background = "#FFFFFF";
+        //ret.background = "#FFFFFF";
+        ret.background = "#F2F2F2";
+
         // this.configMultiState(ret);
         layout.setLayoutParam(0, "align", { left: "parent", middle: "parent" });
         layout.setLayoutParam(1, "align", { left: { target: 0, side: "right" }, top: "parent" });
