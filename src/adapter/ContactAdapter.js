@@ -68,12 +68,23 @@ class ContactAdapter extends BaseAdapter {
         } else {
             pointIv.visibility = View.Visibility.Hidden;
         }
+
+        let item_cm = convertView.findViewById("item");
         // convertView = this._buildMsgLayout(position);
+        //
+        if(this.main.ChatWithUserName === this.data[position].UserName){
+            item_cm.background = "#d3d3d3";
+        }else{
+            item_cm.background = "#F2F2F2";
+        }
+
+        convertView.userName = this.data[position].UserName;
         return convertView;
     }
 
     _buildMsgLayout(position) {
         let ret = new CompositeView();
+        ret.id = "item";
         let layout = new RelativeLayout();
         ret.layout = layout;
         let height = 55;

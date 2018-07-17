@@ -36,7 +36,7 @@ const Rectangle = require("yunos/graphics/Rectangle");
 const GridView = require("yunos/ui/view/GridView");
 const ImgeGridAdapter = require("./adapter/ImgeGridAdapter");
 const TextGridAdapter = require("./adapter/TextGridAdapter");
-
+const ScrollBar = require("yunos/ui/widget/ScrollBar");
 const TAG = "WebWx_Main";
 let self;
 let timeout = null;
@@ -270,6 +270,9 @@ class Main extends Page {
         this.mContactLV.id = "contactlv";
         this.mContactLV.width = width / 4;
         this.mContactLV.height = height;
+        var scrollBar = new ScrollBar();
+        scrollBar.height =this.mContactLV.height;
+        this.mContactLV.verticalScrollBar = scrollBar;
 
         this.mContactLV.on("itemselect", this.onContactLvSelect);
         this.mContactLV.page = this;
@@ -631,6 +634,7 @@ class Main extends Page {
         // log.I(TAG, "contacts_data = " + contacts_data.length);
         this.mContactAdapter = new ContactAdapter(this.mWxModule);
         this.mContactAdapter.data = contacts_data;
+        this.mContactAdapter.main = self;
         this.mContactLV.adapter = this.mContactAdapter;
 
         this.chatAdapter = new ChatAdapter(this.mWxModule);
