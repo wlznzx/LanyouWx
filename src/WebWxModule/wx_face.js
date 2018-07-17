@@ -583,7 +583,7 @@ class WxFace{
                 this.isFace = true;
                 break;
                 case "[勾引]":
-                tthis.index = 84;
+                this.index = 84;
                 this.isFace = true;
                 break;
                 case "[拳头]":

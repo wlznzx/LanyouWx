@@ -550,12 +550,12 @@ class WxModule extends EventEmitter {
         if (msg.MsgType === CODES.MM_DATA_IMG) {
             msg.Content = "圖片.";
         } else if (msg.MsgType == CODES.MM_DATA_EMOJI) {
-            if(msg.Content == ""){
+            if (msg.Content == "") {
                 msg.Content = "[收到了一个表情，请在手机上查看]";
-            }else{
+            } else {
                 msg.Content = "表情.";
             }
-        }else if (msg.MsgType !== CODES.MM_DATA_TEXT && msg.MsgType !== CODES.MM_DATA_VOICEMSG && msg.Content != "") {
+        } else if (msg.MsgType !== CODES.MM_DATA_TEXT && msg.MsgType !== CODES.MM_DATA_VOICEMSG && msg.Content != "") {
             msg.Content = "暫不支持此類型消息.";
         } else if (msg.MsgType == CODES.MSGTYPE_VOICE) {
             msg.Content = "语音.";
@@ -836,7 +836,7 @@ class WxModule extends EventEmitter {
         // log.I(TAG,'通知成功!');
         // log.I(TAG,'获取通讯录列表成功!');
         if (this.chatSet) {
-            // this.emit("u_contacts", "");
+            this.emit("u_contacts", "");
         }
 
         this.pushHost = await this.lookupSyncCheckHost();
@@ -1044,7 +1044,7 @@ class WxModule extends EventEmitter {
             return searchString.indexOf(starts, 0) === 0;
         }
         log.I(TAG, "getRecentContacts _chatArr.length = " + _chatArr.length);
-        if( _chatArr.length < 10) return;
+        if (_chatArr.length < 10) return;
         var i = _chatArr.length;
         while (i--) {
             if (!startsWith(_chatArr[i].toString(), "@")) {
@@ -1067,13 +1067,13 @@ class WxModule extends EventEmitter {
                 contact.setUserName(member.UserName);
                 if (member.RemarkName !== '') {
                     contact.setName(member.RemarkName);
-                } else if(member.NickName !== '') {
+                } else if (member.NickName !== '') {
                     contact.setName(member.NickName);
-                } else if(startsWith(_chatArr[i], "@@")) {
+                } else if (startsWith(_chatArr[i], "@@")) {
                     // log.I(TAG, member);
                     var _groupName = "";
-                    for(var j = 0; j < member.MemberCount; j++) {
-                        if(j === (member.MemberCount - 1)){
+                    for (var j = 0; j < member.MemberCount; j++) {
+                        if (j === (member.MemberCount - 1)) {
                             _groupName += member.MemberList[j].NickName;
                         } else {
                             _groupName += member.MemberList[j].NickName + "、";
@@ -1109,7 +1109,31 @@ class WxModule extends EventEmitter {
         } else {
             member = await this.getMember(pUserName);
         }
-        return member;
+
+
+        let contact = null;
+        if (member != null) {
+            contact = new Contact();
+            contact.setUserName(member.UserName);
+            if (member.RemarkName !== '') {
+                contact.setName(member.RemarkName);
+            } else if (member.NickName !== '') {
+                contact.setName(member.NickName);
+            } else if (startsWith(_chatArr[i], "@@")) {
+                // log.I(TAG, member);
+                var _groupName = "";
+                for (var j = 0; j < member.MemberCount; j++) {
+                    if (j === (member.MemberCount - 1)) {
+                        _groupName += member.MemberList[j].NickName;
+                    } else {
+                        _groupName += member.MemberList[j].NickName + "、";
+                    }
+                }
+                contact.setName(_groupName);
+                log.I(TAG, _groupName);
+            }
+        }
+        return contact;
     }
 
     async getMsgListByWithUserName(pWithUserName) {

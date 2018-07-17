@@ -197,18 +197,32 @@ class Main extends Page {
         });
 
         this.mWxModule.on("u_contacts", () => {
-            log.D(TAG, "getRecentContacts..");
+            // log.D(TAG, "getRecentContacts..");
             this.mWxModule.getRecentContacts().then((result) => {
                 if (result) {
-                    this.mContactLV.ContactsList = result;
-                    this.initDatas(result);
+                    if (!self.mContactLV.ContactsList) {
+                        self.mContactLV.ContactsList = result;
+                    } else {
+                        self.mContactLV.ContactsList.splice(0, self.mContactLV.ContactsList.length);
+                        for (let i = 0; i < result.length; i++) {
+                            self.mContactLV.ContactsList.push(result[i]);
+                        }
+                        self.mContactAdapter.data = self.mContactLV.ContactsList;
+                        self.mContactAdapter.onDataChange();
+                    }
+                    log.D(TAG, "getRecentContacts.. result = " + result.length);
+                    log.D(TAG, "getRecentContacts.. self.mContactLV.ContactList = " + self.mContactLV.ContactsList.length);
+                    log.D(TAG, "getRecentContacts.. self.isLopped = " + self.isLopped);
+                    if (!self.isLopped) {
+                        self.initDatas(result);
+                    }
                 }
             });
         });
 
         //手机微信退出时，restart界面
         this.mWxModule.on("restart", () => {
-            log.I("test", "界面restart");
+            self.isLopped = false;
             this.window.removeAllChildren();
             if (this.optionsMenu != null) {
                 this.optionsMenu.close();
@@ -762,28 +776,32 @@ class Main extends Page {
     // 更新....
     refreshContactPart(WithUserName, pIsReceive) {
         if (!this.isLopped) return;
+        log.I(TAG, "-----------------refreshContactPart--------------------- WithUserName = " + WithUserName);
         let index;
         for (let i = 0; i < this.mContactLV.ContactsList.length; i++) {
+            // log.I(TAG, "UserName = " + this.mContactLV.ContactsList[i].UserName + " Name = " + this.mContactLV.ContactsList[i].Name);
             if (this.mContactLV.ContactsList[i].UserName === WithUserName) {
                 index = i;
                 break;
             }
         }
-
-        if (index) {
+        log.I(TAG, "-----------------refreshContactPart--------------------- index = " + index);
+        if (index !== undefined) {
             let _contact = this.mContactLV.ContactsList.splice(index, 1);
             if (pIsReceive) _contact[0].hasNewMsg = true;
             this.mContactLV.ContactsList.unshift(_contact[0]);
             this.mContactAdapter.data = this.mContactLV.ContactsList;
             this.mContactAdapter.onDataChange();
         } else {
-            // this.mWxModule.getMemberFromDB(WithUserName).then((ret) => {
-            //     log.I(TAG, ret);
-            //     if (pIsReceive) ret.hasNewMsg = true;
-            //     this.mContactLV.ContactsList.unshift(ret);
-            //     this.mContactAdapter.data = this.mContactLV.ContactsList;
-            //     this.mContactAdapter.onDataChange();
-            // });
+            this.mWxModule.getMemberFromDB(WithUserName).then((ret) => {
+                log.I(TAG, ret);
+                if(ret) {
+                    if (pIsReceive) ret.hasNewMsg = true;
+                    this.mContactLV.ContactsList.unshift(ret);
+                    this.mContactAdapter.data = this.mContactLV.ContactsList;
+                    this.mContactAdapter.onDataChange();
+                }
+            });
         }
     }
 

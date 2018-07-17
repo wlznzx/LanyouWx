@@ -250,6 +250,7 @@ class ChatAdapter extends BaseAdapter {
             layout.setLayoutParam("content_view", "align", { right: { target: "avatar", side: "left" } });
             layout.setLayoutParam("avatar", "margin", { right: screen.getPixelByDp(30) });
             layout.setLayoutParam("content_view", "margin", { right: screen.getPixelByDp(5) });
+            this.data[position].WithUserName = this.mWxModule.my.UserName;
         } else {
             layout.setLayoutParam("avatar", "align", { left: "parent" });
             layout.setLayoutParam("content_view", "align", { left: { target: "avatar", side: "right" } });
@@ -366,6 +367,7 @@ class ChatAdapter extends BaseAdapter {
             layout.setLayoutParam("bg_view", "margin", { right: screen.getPixelByDp(15) });
             layout.setLayoutParam("voice_lenght_tv", "margin", { right: screen.getPixelByDp(30) });
             bgView.background = "#b2e281";
+            this.data[position].WithUserName = this.mWxModule.my.UserName;
             animationView.src = resource.getImageSrc("./images/voice_self.png");
         } else {
             layout.setLayoutParam("avatar", "align", { left: "parent" });
@@ -433,6 +435,7 @@ class ChatAdapter extends BaseAdapter {
             layout.setLayoutParam("bg_id", "align", { right: { target: "avatar", side: "left" } });
             layout.setLayoutParam("avatar", "margin", { right: screen.getPixelByDp(30) });
             layout.setLayoutParam("bg_id", "margin", { right: screen.getPixelByDp(5) });
+            this.data[position].WithUserName = this.mWxModule.my.UserName;
         } else {
             layout.setLayoutParam("avatar", "align", { left: "parent" });
             layout.setLayoutParam("bg_id", "align", { left: { target: "avatar", side: "right" } });
