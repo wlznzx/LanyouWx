@@ -155,6 +155,7 @@ class Main extends Page {
                         displayMsg += msg.GroupMember.NickName;
                     }
                     displayMsg += ": " + msg.Content;
+                    this.mMsgTextView.visibility = View.Visibility.Visible;
                     this.mMsgTextView.text = displayMsg;
                     log.D(TAG, "displayMsg = " + displayMsg);
                     self.showTips();
@@ -780,7 +781,7 @@ class Main extends Page {
     // 更新....
     refreshContactPart(WithUserName, pIsReceive) {
         if (!this.isLopped) return;
-        log.I(TAG, "-----------------refreshContactPart--------------------- WithUserName = " + WithUserName);
+        // log.I(TAG, "-----------------refreshContactPart--------------------- WithUserName = " + WithUserName);
         let index;
         for (let i = 0; i < this.mContactLV.ContactsList.length; i++) {
             // log.I(TAG, "UserName = " + this.mContactLV.ContactsList[i].UserName + " Name = " + this.mContactLV.ContactsList[i].Name);
@@ -789,7 +790,7 @@ class Main extends Page {
                 break;
             }
         }
-        log.I(TAG, "-----------------refreshContactPart--------------------- index = " + index);
+        // log.I(TAG, "-----------------refreshContactPart--------------------- index = " + index);
         if (index !== undefined) {
             let _contact = this.mContactLV.ContactsList.splice(index, 1);
             if (pIsReceive) _contact[0].hasNewMsg = true;
@@ -830,6 +831,7 @@ class Main extends Page {
                 log.D(TAG, "MsgId = " + itemView.msgInfo.MsgId + " playingMsgId = " + self.chatAdapter.playingMsgId);
                 if (itemView.msgInfo.MsgId == self.chatAdapter.playingMsgId) {
                     log.D(TAG, "do stop.");
+                    itemView.animationView.restart();
                     itemView.animationView.stop();
                 }
             }
@@ -842,8 +844,8 @@ class Main extends Page {
         // log.D(TAG, "onContactLvSelect =" + this);
         // log.I(TAG, "refreshMsgPart.. = " + FromUserName);
         this.mWxModule.getMsgListByWithUserName(FromUserName).then((ret) => {
-            // log.I(TAG, ret);
-            // log.I(TAG, ret.length);
+            log.I(TAG, ret);
+            log.I(TAG, ret.length);
             this.chatAdapter.data = this.getMsgList(ret);
             this.chatAdapter.onDataChange();
             this.mChatLV.arriveAt(this.chatAdapter.getCount() - 1);

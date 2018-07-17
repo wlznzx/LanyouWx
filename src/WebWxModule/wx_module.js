@@ -545,8 +545,46 @@ class WxModule extends EventEmitter {
     }
 
     async handleMsg(msg) {
-        log.I(TAG, "-----------------msg-------------------");
-        log.I(TAG, msg);
+        // log.I(TAG, "-----------------msg-------------------");
+        // log.I(TAG, msg);
+
+        if (msg.FromUserName.includes('@@')) {
+            log.I(TAG, "----------------- Group Msg -------------------");
+            log.I(TAG, msg);
+            try{
+                const userId = msg.Content.match(/^(@[a-zA-Z0-9]+|[a-zA-Z0-9_-]+):<br\/>/)[1];
+                msg.GroupMember = await this.getGroupMember(userId, msg.FromUserName);
+                msg.Group = await this.getGroup(msg.FromUserName);
+                msg.Content = msg.Content.replace(/^(@[a-zA-Z0-9]+|[a-zA-Z0-9_-]+):<br\/>/, '');
+            }catch(e) {
+                log.I(TAG, 'group msg', e);
+            }
+
+            // log.I(TAG,`
+            //   来自群 ${msg.Group.NickName} 的消息
+            //   ${msg.GroupMember.DisplayName || msg.GroupMember.NickName}: ${msg.Content}
+            // `);
+            // await this.mWxDao.insertMsg({WithUserName: msg.FromUserName,IsReceive: true,MsgType: msg.MsgType,Content: msg.Content,CreateTime: msg.CreateTime,IsGroup: true,GroupMember: msg.GroupMember});
+            if (msg.MsgType === CODES.MM_DATA_IMG) {
+                msg.Content = "圖片.";
+            } else if (msg.MsgType == CODES.MM_DATA_EMOJI) {
+                if (msg.Content == "") {
+                    msg.Content = "[收到了一个表情，请在手机上查看]";
+                } else {
+                    msg.Content = "表情.";
+                }
+            } else if (msg.MsgType !== CODES.MM_DATA_TEXT && msg.MsgType !== CODES.MM_DATA_VOICEMSG && msg.Content != "") {
+                msg.Content = "该类型消息努力完善中....请在手机上查看.";
+            } else if (msg.MsgType == CODES.MSGTYPE_VOICE) {
+                msg.Content = "语音.";
+            }
+            // this.msgInsert({ MsgId: msg.MsgId, WithUserName: msg.FromUserName, IsReceive: true, MsgType: msg.MsgType, Content: msg.Content, CreateTime: msg.CreateTime, IsGroup: true, GroupMember: msg.GroupMember, Url: msg.Url, ImgUrl: img_url, VoiceLength: msg.VoiceLength });
+            this.msgInsert({ MsgId: msg.MsgId, WithUserName: msg.FromUserName, IsReceive: true, MsgType: msg.MsgType, Content: msg.Content, CreateTime: 12351235, IsGroup: true, GroupMember: msg.GroupMember ,Url: msg.Url,VoiceLength: msg.VoiceLength});
+            // this.msgInsert({ MsgId: msg.MsgId, WithUserName: msg.FromUserName, IsReceive: true, MsgType: msg.MsgType, Content: msg.Content, CreateTime: msg.CreateTime, IsGroup: true, GroupMember: msg.GroupMember, Url: msg.Url, ImgUrl: img_url, VoiceLength: msg.VoiceLength });
+            this.emit("group", msg);
+            return;
+        }
+
         if (msg.MsgType === CODES.MM_DATA_IMG) {
             msg.Content = "圖片.";
         } else if (msg.MsgType == CODES.MM_DATA_EMOJI) {
@@ -556,24 +594,17 @@ class WxModule extends EventEmitter {
                 msg.Content = "表情.";
             }
         } else if (msg.MsgType !== CODES.MM_DATA_TEXT && msg.MsgType !== CODES.MM_DATA_VOICEMSG && msg.Content != "") {
-            msg.Content = "暫不支持此類型消息.";
+            msg.Content = "该类型消息努力完善中....请在手机上查看.";
         } else if (msg.MsgType == CODES.MSGTYPE_VOICE) {
             msg.Content = "语音.";
         }
 
-        if (msg.FromUserName.includes('@@')) {
-            const userId = msg.Content.match(/^(@[a-zA-Z0-9]+|[a-zA-Z0-9_-]+):<br\/>/)[1];
-            msg.GroupMember = await this.getGroupMember(userId, msg.FromUserName);
-            msg.Group = await this.getGroup(msg.FromUserName);
-            msg.Content = msg.Content.replace(/^(@[a-zA-Z0-9]+|[a-zA-Z0-9_-]+):<br\/>/, '');
-            // log.I(TAG,`
-            //   来自群 ${msg.Group.NickName} 的消息
-            //   ${msg.GroupMember.DisplayName || msg.GroupMember.NickName}: ${msg.Content}
-            // `);
-            // await this.mWxDao.insertMsg({WithUserName: msg.FromUserName,IsReceive: true,MsgType: msg.MsgType,Content: msg.Content,CreateTime: msg.CreateTime,IsGroup: true,GroupMember: msg.GroupMember});
-            this.msgInsert({ MsgId: msg.MsgId, WithUserName: msg.FromUserName, IsReceive: true, MsgType: msg.MsgType, Content: msg.Content, CreateTime: msg.CreateTime, IsGroup: true, GroupMember: msg.GroupMember, Url: msg.Url, ImgUrl: img_url, VoiceLength: msg.VoiceLength });
-            this.emit("group", msg);
-            return;
+        var img_url = "";
+        if (msg.Url != "" && msg.Url.includes("apis.map.qq")) {
+            // 嗯，這應該是地理位置消息.
+            var msg_arr = msg.Content.toString().split(":<br/>");
+            msg.Content = msg_arr[0];
+            img_url = "https://" + this.baseHost + msg_arr[1];
         }
 
         if (msg.StatusNotifyUserName && !this.isGetRecentContacts) {
@@ -598,13 +629,7 @@ class WxModule extends EventEmitter {
             return;
         }
 
-        let img_url = "";
-        if (msg.Url != "" && msg.Url.includes("apis.map.qq")) {
-            // 嗯，這應該是地理位置消息.
-            var msg_arr = msg.Content.toString().split(":<br/>");
-            msg.Content = msg_arr[0];
-            img_url = "https://" + this.baseHost + msg_arr[1];
-        }
+
 
         if (msg.FromUserName !== this.my.UserName) {
             //   await this.mWxDao.insertMsg({WithUserName: msg.FromUserName,IsReceive: true,MsgType: msg.MsgType,Content: msg.Content,CreateTime: msg.CreateTime,IsGroup: false,GroupMember: ''});
@@ -979,6 +1004,74 @@ class WxModule extends EventEmitter {
             params: {
                 msgid: uniqueID,
                 skey: this.skey
+            }
+        }).then((result) => {
+            const { data } = result;
+ //           log.D(TAG, "------------------getMsgImg-------------------");
+ //           log.D(TAG, result);
+            callback = callback || (() => (null));
+            let path = APPCATION_PATH + "_" + uniqueID + ".jpg";
+            fs.writeFile(path, data, "binary", function (err) {
+                if (err) {
+                    callback(null);
+                } else {
+                    callback(path);
+                }
+            });
+        }).catch((e) => {
+            return;
+        });
+    }
+
+    getLinkMsgImg(uniqueID, callback) {
+        req.request({
+            url: URLS.API_webwxgetmsgimg,
+            method: 'get',
+            responseType: 'arraybuffer',
+            headers: {
+                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+                'Accept-Encoding': 'gzip, deflate, br',
+                'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_2) ' +
+                    'AppleWebKit/537.36 (KHTML, like Gecko) Chrome/50.0.2652.0 Safari/537.36',
+            },
+            params: {
+                msgid: uniqueID,
+                skey: this.skey,
+                type: "slave"
+            }
+        }).then((result) => {
+            const { data } = result;
+            log.D(TAG, "------------------getMsgImg-------------------");
+            log.D(TAG, result);
+            callback = callback || (() => (null));
+            let path = APPCATION_PATH + "_" + uniqueID + ".jpg";
+            fs.writeFile(path, data, "binary", function (err) {
+                if (err) {
+                    callback(null);
+                } else {
+                    callback(path);
+                }
+            });
+        }).catch((e) => {
+            return;
+        });
+    }
+
+    getLocationImg(uniqueID, callback) {
+        req.request({
+            url: URLS.API_webwxgetpubliclinkimg,
+            method: 'get',
+            responseType: 'arraybuffer',
+            headers: {
+                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+                'Accept-Encoding': 'gzip, deflate, br',
+                'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_2) ' +
+                    'AppleWebKit/537.36 (KHTML, like Gecko) Chrome/50.0.2652.0 Safari/537.36',
+            },
+            params: {
+                url: "xxx",
+                msgid: uniqueID,
+                pictype: "location"
             }
         }).then((result) => {
             const { data } = result;

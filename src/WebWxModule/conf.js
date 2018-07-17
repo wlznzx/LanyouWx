@@ -38,6 +38,7 @@ module.exports.getUrls = function getUrls({
     API_webwxreport: 'https://' + baseHost + '/cgi-bin/mmwebwx-bin/webwxstatreport',
     API_webwxsearch: 'https://' + baseHost + '/cgi-bin/mmwebwx-bin/webwxsearchcontact',
     API_webwxoplog: 'https://' + baseHost + '/cgi-bin/mmwebwx-bin/webwxoplog',
+    API_webwxgetpubliclinkimg: 'https://' + baseHost + '/cgi-bin/mmwebwx-bin/webwxgetpubliclinkimg'
   };
 };
 

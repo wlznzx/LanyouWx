@@ -28,7 +28,7 @@ class ChatAdapter extends BaseAdapter {
     }
 
     createItem(position, convertView) {
-        if (this.data[position].MsgType == "3" || this.data[position].MsgType == "49") {
+        if (this.data[position].MsgType == "3") {
             convertView = this.buildImgLayout(position);
         } else if (this.data[position].MsgType == "47") {
             if(this.data[position].Content == "表情."){
@@ -38,7 +38,9 @@ class ChatAdapter extends BaseAdapter {
             }
         }else if (this.data[position].MsgType == "34") {
             convertView = this.buildVoiceMsgLayout(position);
-        } else if (this.data[position].Url) {
+        } else if (this.data[position].MsgType == "49") {
+            convertView = this.buildLinkMsgLayout(position);
+        }else if (this.data[position].Url) {
             convertView = this.buildLocationMsgLayout(position);
         } else {
             convertView = this.buildMsgLayout(position);
@@ -278,7 +280,7 @@ class ChatAdapter extends BaseAdapter {
         if (fs.existsSync(_mapimg)) {
             imageLoader.displayImage(bgIV, _mapimg);
         } else if (this.mWxModule) {
-            this.mWxModule.getImg(this.data[position].ImgUrl, this.data[position].MsgId, (path) => {
+            this.mWxModule.getLocationImg(this.data[position].MsgId, (path) => {
                 imageLoader.displayImage(bgIV, path);
             });
         } else {
@@ -425,10 +427,10 @@ class ChatAdapter extends BaseAdapter {
         let IMG_MSG_HEIGHT = 250;
         let bgIV = new ImageView();
         bgIV.id = "bg_id";
-        bgIV.width = IMG_MSG_WIDTH;
-        bgIV.height = IMG_MSG_HEIGHT;
+
+        // bgIV.height = IMG_MSG_HEIGHT;
         bgIV.scaleType = ImageView.ScaleType.Fitxy;
-        ret.addChild(bgIV);
+
 
         if (!this.data[position].IsReceive) {
             layout.setLayoutParam("avatar", "align", { right: "parent" });
@@ -442,8 +444,8 @@ class ChatAdapter extends BaseAdapter {
             layout.setLayoutParam("avatar", "margin", { left: screen.getPixelByDp(30) });
             layout.setLayoutParam("bg_id", "margin", { left: screen.getPixelByDp(5) });
         }
-        ret.height = IMG_MSG_HEIGHT;
-        ret.width = IMG_MSG_WIDTH + 60;
+        ret.height = 350;
+        ret.width = 350 + 60;
 
         // BindData
         let _path = IMG_PATH + "_" + this.data[position].WithUserName + ".jpg";
@@ -480,14 +482,14 @@ class ChatAdapter extends BaseAdapter {
                     bgIV.width = width;
                     bgIV.height = height;
                     bgIV.src = bitmap;
-                    ret.height = height;
+                    ret.height = height > ivSize ? height : ivSize;
                     ret.width = width + 60;
+
                 }
             });
             // imageLoader.displayImage(bgIV, _img);
         } else if (this.mWxModule) {
             this.mWxModule.getMsgImg(this.data[position].MsgId, (path) => {
-                log.D("face","start!!");
                 imageLoader.load(path, (err, bitmap) => {
                     if(!err){
                         let width = bitmap.width;
@@ -508,7 +510,7 @@ class ChatAdapter extends BaseAdapter {
                         bgIV.width = width;
                         bgIV.height = height;
                         bgIV.src = bitmap;
-                        ret.height = height;
+                        ret.height = height > ivSize ? height : ivSize;
                         ret.width = width + 60;
                     }
                 });
@@ -523,6 +525,145 @@ class ChatAdapter extends BaseAdapter {
         // log.D(TAG, "buildLocationMsgLayout Msg--------------");
         // log.D(TAG, this.data[position]);
         return ret;
+    }
+
+
+    buildLinkMsgLayout(position){
+        let ret = new CompositeView();
+        let layout = new RelativeLayout();
+        ret.layout = layout;
+        var iv = new ImageView();
+        var ivSize = 40;
+        iv.id = "avatar";
+        iv.width = ivSize;
+        iv.height = ivSize;
+        iv.scaleType = ImageView.ScaleType.Fitxy;
+
+        ret.addChild(iv);
+
+        //具体内容分三部分，标题，正文和图片
+        let linkTV = new CompositeView();
+        let linkLayout = new RelativeLayout();
+        linkTV.layout = linkLayout;
+        linkTV.id = "linkTV";
+
+        let title_tv = new TextView();
+        title_tv.id = "title_tv";
+        title_tv.fontWeight = TextView.FontWeight.Bold;
+        title_tv.fontSize = "11sp";
+        title_tv.maxWidth = 350;
+        title_tv.multiLine = true;
+
+
+        let content_tv = new TextView();
+        content_tv.id = "content_tv";
+        content_tv.fontSize = "9sp";
+        content_tv.maxWidth = 260;
+        content_tv.multiLine = true;
+
+        let bg_tv = new ImageView();
+        bg_tv.id = "bg_tv";
+        bg_tv.scaleType = ImageView.ScaleType.Fitxy;
+        bg_tv.height = 60;
+        bg_tv.width = 90;
+
+        linkTV.addChild(title_tv);
+        linkTV.addChild(content_tv);
+        linkTV.addChild(bg_tv);
+
+        linkLayout.setLayoutParam("title_tv", "align", { top: "parent" });
+        linkLayout.setLayoutParam("content_tv", "align", { left: { target:"title_tv", side: "left"} ,top: { target:"title_tv", side: "bottom"} });
+        linkLayout.setLayoutParam("bg_tv", "align", { left: { target:"content_tv", side: "right"},top: { target:"content_tv", side: "top"} });
+        linkLayout.setLayoutParam("content_tv", "margin", { top: screen.getPixelByDp(5) });
+        linkLayout.setLayoutParam("bg_tv", "margin", { left: screen.getPixelByDp(5) });
+
+        ret.addChild(linkTV);
+        if (!this.data[position].IsReceive) {
+            layout.setLayoutParam(0, "align", { right: "parent" });
+            layout.setLayoutParam(1, "align", { right: { target: 0, side: "left" }, middle: "parent" });
+            layout.setLayoutParam(0, "margin", { right: screen.getPixelByDp(30) });
+            layout.setLayoutParam(1, "margin", { right: screen.getPixelByDp(5) });
+        } else {
+            layout.setLayoutParam(0, "align", { left: "parent" });
+            layout.setLayoutParam(1, "align", { left: { target: 0, side: "right" }, middle: "parent" });
+            layout.setLayoutParam(0, "margin", { left: screen.getPixelByDp(30) });
+            layout.setLayoutParam(1, "margin", { left: screen.getPixelByDp(5) });
+        }
+        // if (realHeight > ivSize) {
+        //     layout.setLayoutParam(1, "margin", { top: screen.getPixelByDp(15) });
+        // }
+        layout.setLayoutParam(1, "margin", { top: screen.getPixelByDp(15) });
+
+        this.bindLinkData(ret, position);
+        return ret;
+
+    }
+
+    bindLinkData(convertView, position) {
+        // log.D(TAG , "bindData = " + position);
+        // log.D(TAG , this.data[position]);
+        if(this.data[position].WithUserName == "") return;
+
+        let linkTV = convertView.findViewById("linkTV");
+        let bg_tv = linkTV.findViewById("bg_tv");
+        let title_tv = linkTV.findViewById("title_tv");
+        let content_tv = linkTV.findViewById("content_tv");
+
+        let content = this.data[position].Content;
+        log.D(TAG , content);
+
+        let pattern_title= /(?<=title&gt;).*?(?=&lt;)/;
+        let array_title = content.match(pattern_title);
+        log.D(TAG , "array_title:  " + array_title);
+        //避免网络问题，分享点击过快数据未加载时，显示空白（网页版微信也是一样的）。
+        if(array_title != null){
+            title_tv.text = array_title[0];
+        }else {
+            title_tv.text = "  ";
+        }
+
+        let pattern_content= /(?<=des&gt;).*?(?=&lt;)/;
+        let array_content = content.match(pattern_content);
+        log.D(TAG , "array_content:  " + array_content);
+        if(array_content != null){
+            content_tv.text = array_content[0] + "..";
+        }else{
+            content_tv.text = "   ";
+        }
+
+
+
+        let _pathLink = IMG_PATH + "_" + this.data[position].MsgId + ".jpg";
+        if (fs.existsSync(_pathLink)) {
+            imageLoader.displayImage(bg_tv, _pathLink);
+        } else if (this.mWxModule) {
+            this.mWxModule.getLinkMsgImg(this.data[position].MsgId, (path) => {
+                log.D(TAG , "pathLink: " + path);
+                log.D(TAG , "MsgId: " + this.data[position].MsgId);
+                imageLoader.displayImage(bg_tv, path);
+            });
+        }
+
+        // linkTV.height = title_tv.height + content_tv.height;
+        linkTV.height = content_tv.height > bg_tv.height ? content_tv.height + title_tv.height + screen.getPixelByDp(5) : bg_tv.height + title_tv.height + screen.getPixelByDp(5);
+        linkTV.width = 350;
+        convertView.height = linkTV.height;
+        convertView.width = linkTV.width + 60;
+        convertView.Url = this.data[position].Url;
+
+        let avatar_iv = convertView.findViewById("avatar");
+        if (!this.data[position].IsReceive) {
+            this.data[position].WithUserName = this.mWxModule.my.UserName;
+        }
+        let _path = IMG_PATH + "_" + this.data[position].WithUserName + ".jpg";
+        if (fs.existsSync(_path)) {
+            imageLoader.displayImage(avatar_iv, _path);
+        } else if (this.mWxModule) {
+            this.mWxModule.getHeadimg(this.data[position].WithUserName, (path) => {
+                log.D(TAG , "path: " + path);
+                imageLoader.displayImage(avatar_iv, path);
+            });
+        }
     }
 
 }
