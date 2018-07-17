@@ -3,7 +3,7 @@ const YObject = require("yunos/core/YObject");
 const resource = require("yunos/content/resource/Resource").getInstance();
 const GridView = require("yunos/ui/view/GridView");
 const RelativeLayout = require("yunos/ui/layout/RelativeLayout");
-
+const screen = require("yunos/device/Screen").getInstance();
 const ImageView = require("yunos/ui/view/ImageView");
 
 const BaseAdapter = require("yunos/ui/adapter/BaseAdapter");
@@ -26,6 +26,10 @@ class ImgeGridAdapter extends BaseAdapter {
             v.scaleType = ImageView.ScaleType.Fitxy;
         }
         v.src = ItemData.image;
+        let width = screen.widthPixels;
+        log.D(TAG , width);
+        v.width = width*3/(4*20);
+        v.height = width*3/(4*20);
         return v;
     }
 

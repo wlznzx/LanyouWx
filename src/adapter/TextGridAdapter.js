@@ -7,6 +7,7 @@ const RelativeLayout = require("yunos/ui/layout/RelativeLayout");
 const ImageView = require("yunos/ui/view/ImageView");
 const TextView = require("yunos/ui/view/TextView");
 const Button = require("yunos/ui/widget/Button");
+const screen = require("yunos/device/Screen").getInstance();
 
 const BaseAdapter = require("yunos/ui/adapter/BaseAdapter");
 const TAG = "grid";
@@ -29,8 +30,9 @@ class TextGridAdapter extends BaseAdapter {
         }
         v.text = ItemData;
         v.sizeType = Button.SizeType.Small;
-        v.width = 480 ;
-        v.height = 48 ;
+        let width = screen.widthPixels;
+        v.width = width*3/(4*2);
+        v.height = width*3/(4*20);
         v.borderWidth = 1;
         v.borderColor = "#c0c0c0";
         v.buttonColor = "rgba(123,127,141,0.4)";

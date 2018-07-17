@@ -24,6 +24,7 @@
     },
     "pages": [
         {
+            "title": "LanyouWx",
             "uri": "page://LanyouWx.yunos.com/Main",
             "content_path": "src/Main.js",
             "main": true,

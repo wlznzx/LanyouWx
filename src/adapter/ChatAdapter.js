@@ -28,9 +28,15 @@ class ChatAdapter extends BaseAdapter {
     }
 
     createItem(position, convertView) {
-        if (this.data[position].MsgType == "3" || this.data[position].MsgType == "47") {
+        if (this.data[position].MsgType == "3" || this.data[position].MsgType == "49") {
             convertView = this.buildImgLayout(position);
-        } else if (this.data[position].MsgType == "34") {
+        } else if (this.data[position].MsgType == "47") {
+            if(this.data[position].Content == "表情."){
+                convertView = this.buildImgLayout(position);
+            }else{
+                convertView = this.buildMsgLayout(position);
+            }
+        }else if (this.data[position].MsgType == "34") {
             convertView = this.buildVoiceMsgLayout(position);
         } else if (this.data[position].Url) {
             convertView = this.buildLocationMsgLayout(position);
@@ -83,9 +89,9 @@ class ChatAdapter extends BaseAdapter {
         let tv = new RichTextView();
         // let tv = new TextView();
 
-        let facePath = resource.getImageSrc("/images/qqface.png");
-        let faceImage = new Image(facePath);
-        let height_face = faceImage.height/7;
+        // let facePath = resource.getImageSrc("/images/qqface.png");
+        // let faceImage = new Image(facePath);
+        // let height_face = faceImage.height/7;
 
 
         tv.id = "content";
@@ -150,20 +156,19 @@ class ChatAdapter extends BaseAdapter {
         let index = 0;
         let str = "";
 
-        log.D("test" ,"try to show");
+
         if(array_face != null){
             for(let i=0 ;i < array_face.length;i++){
                 //richTextView.text = "This is a <b>very<img src=\"" + smileFace2 + "\" width=\"65\" height=\"65\" align=\"middle\"/>happy</b> face vertically aligned in the middle.";
-                log.D("test","进行第" + i + "次");
+                // log.D("test","进行第" + i + "次");
 
                 let wxFace = new WxFace(array_face[i]);
                 if(wxFace.isFace){
-                    let path = "/images/faceView/" + "save" + wxFace.index +".png";
+                    let path = "/facev/" + "smiley_" + wxFace.index +".png";
+
                     let src = resource.getImageSrc(path);
 
 
-                    log.D("test" , "path:"+ path);
-                    log.D("test" , "src:" + src);
 
                     str += content.slice(index,content.indexOf(array_face[i], index));
                     str += "<img src=\"" + src +"\"  width=\"30\" height=\"30\" align=\"middle\"/>";
@@ -342,7 +347,7 @@ class ChatAdapter extends BaseAdapter {
         voiceLenghtTv.id = "voice_lenght_tv";
         voiceLenghtTv.width = 20;
         voiceLenghtTv.height = 15;
-        voiceLenghtTv.fontSize = "12sp";
+        voiceLenghtTv.fontSize = "10sp";
         voiceLenghtTv.Color = "gray";
         voiceLenghtTv.text = VoicePlayTimes + "''";
 
@@ -453,16 +458,65 @@ class ChatAdapter extends BaseAdapter {
         let _img = IMG_PATH + "_" + this.data[position].MsgId + ".jpg";
         // bgIV.src = resource.getImageSrc("images/location_demo.png");
         if (fs.existsSync(_img)) {
-            imageLoader.displayImage(bgIV, _img);
+            imageLoader.load(_img, (err, bitmap) => {
+                if(!err){
+                    let width = bitmap.width;
+                    let height = bitmap.height;
+                    let i = height/width;
+                    if(width >= height){
+                        if(width > IMG_MSG_WIDTH){
+                            height = IMG_MSG_WIDTH*i;
+                            width = IMG_MSG_WIDTH;
+                        }
+                    }else{
+                        if(height > IMG_MSG_WIDTH){
+                            width = IMG_MSG_WIDTH/i;
+                            height =IMG_MSG_WIDTH
+                        }
+                    }
+                    bgIV.width = width;
+                    bgIV.height = height;
+                    bgIV.src = bitmap;
+                    ret.height = height;
+                    ret.width = width + 60;
+                }
+            });
+            // imageLoader.displayImage(bgIV, _img);
         } else if (this.mWxModule) {
             this.mWxModule.getMsgImg(this.data[position].MsgId, (path) => {
-                imageLoader.displayImage(bgIV, path);
+                log.D("face","start!!");
+                imageLoader.load(path, (err, bitmap) => {
+                    if(!err){
+                        let width = bitmap.width;
+                        let height = bitmap.height;
+                        let i = height/width;
+
+                        if(width >= height){
+                            if(width > IMG_MSG_WIDTH){
+                                height = IMG_MSG_WIDTH*i;
+                                width = IMG_MSG_WIDTH;
+                            }
+                        }else{
+                            if(height > IMG_MSG_WIDTH){
+                                width = IMG_MSG_WIDTH/i;
+                                height =IMG_MSG_WIDTH
+                            }
+                        }
+                        bgIV.width = width;
+                        bgIV.height = height;
+                        bgIV.src = bitmap;
+                        ret.height = height;
+                        ret.width = width + 60;
+                    }
+                });
+                // imageLoader.displayImage(bgIV, path);
             });
         } else {
             bgIV.src = resource.getImageSrc("images/location_demo.png");
         }
         ret.Url = this.data[position].Url;
         ret.MsgType = this.data[position].MsgType;
+        ret.addChild(bgIV);
         // log.D(TAG, "buildLocationMsgLayout Msg--------------");
         // log.D(TAG, this.data[position]);
         return ret;

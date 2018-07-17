@@ -545,11 +545,17 @@ class WxModule extends EventEmitter {
     }
 
     async handleMsg(msg) {
-        // log.I(TAG, "-----------------msg-------------------");
-        // log.I(TAG, msg);
-        if (msg.MsgType === CODES.MM_DATA_IMG || msg.MsgType === CODES.MM_DATA_EMOJI) {
+        log.I(TAG, "-----------------msg-------------------");
+        log.I(TAG, msg);
+        if (msg.MsgType === CODES.MM_DATA_IMG) {
             msg.Content = "圖片.";
-        } else if (msg.MsgType !== CODES.MM_DATA_TEXT && msg.MsgType !== CODES.MM_DATA_VOICEMSG && msg.Content != "") {
+        } else if (msg.MsgType == CODES.MM_DATA_EMOJI) {
+            if(msg.Content == ""){
+                msg.Content = "[收到了一个表情，请在手机上查看]";
+            }else{
+                msg.Content = "表情.";
+            }
+        }else if (msg.MsgType !== CODES.MM_DATA_TEXT && msg.MsgType !== CODES.MM_DATA_VOICEMSG && msg.Content != "") {
             msg.Content = "暫不支持此類型消息.";
         } else if (msg.MsgType == CODES.MSGTYPE_VOICE) {
             msg.Content = "语音.";
@@ -574,7 +580,7 @@ class WxModule extends EventEmitter {
             this.chatSet = msg.StatusNotifyUserName;
             this.emit("u_contacts", "");
             this.isGetRecentContacts = true;
-            console.log("this.chatSet:" + this.chatSet);
+            // console.log("this.chatSet:" + this.chatSet);
         }
 
         msg.Member = await this.getMember(msg.FromUserName);
@@ -829,6 +835,9 @@ class WxModule extends EventEmitter {
 
         // log.I(TAG,'通知成功!');
         // log.I(TAG,'获取通讯录列表成功!');
+        if (this.chatSet) {
+            // this.emit("u_contacts", "");
+        }
 
         this.pushHost = await this.lookupSyncCheckHost();
 
@@ -840,6 +849,8 @@ class WxModule extends EventEmitter {
         this.syncCheck();
         this.isReady = true;
         this.emit("looped", "");
+
+
         // auto update Contacts every ten minute
         // this.updataContactTimer = setInterval(() => {
         //   this.updateContact();
@@ -1033,6 +1044,7 @@ class WxModule extends EventEmitter {
             return searchString.indexOf(starts, 0) === 0;
         }
         log.I(TAG, "getRecentContacts _chatArr.length = " + _chatArr.length);
+        if( _chatArr.length < 10) return;
         var i = _chatArr.length;
         while (i--) {
             if (!startsWith(_chatArr[i].toString(), "@")) {
@@ -1055,8 +1067,20 @@ class WxModule extends EventEmitter {
                 contact.setUserName(member.UserName);
                 if (member.RemarkName !== '') {
                     contact.setName(member.RemarkName);
-                } else {
+                } else if(member.NickName !== '') {
                     contact.setName(member.NickName);
+                } else if(startsWith(_chatArr[i], "@@")) {
+                    // log.I(TAG, member);
+                    var _groupName = "";
+                    for(var j = 0; j < member.MemberCount; j++) {
+                        if(j === (member.MemberCount - 1)){
+                            _groupName += member.MemberList[j].NickName;
+                        } else {
+                            _groupName += member.MemberList[j].NickName + "、";
+                        }
+                    }
+                    contact.setName(_groupName);
+                    log.I(TAG, _groupName);
                 }
                 contacts.push(contact);
             }
@@ -1073,6 +1097,19 @@ class WxModule extends EventEmitter {
             contacts.push(myself);
         }
         return contacts;
+    }
+
+    async getMemberFromDB(pUserName) {
+        function startsWith(searchString, starts) {
+            return searchString.indexOf(starts, 0) === 0;
+        }
+        let member = null;
+        if (startsWith(pUserName, "@@")) {
+            member = await this.getGroup(pUserName);
+        } else {
+            member = await this.getMember(pUserName);
+        }
+        return member;
     }
 
     async getMsgListByWithUserName(pWithUserName) {

@@ -199,8 +199,10 @@ class Main extends Page {
         this.mWxModule.on("u_contacts", () => {
             log.D(TAG, "getRecentContacts..");
             this.mWxModule.getRecentContacts().then((result) => {
-                this.mContactLV.ContactsList = result;
-                this.initDatas(result);
+                if (result) {
+                    this.mContactLV.ContactsList = result;
+                    this.initDatas(result);
+                }
             });
         });
 
@@ -299,8 +301,8 @@ class Main extends Page {
         let _MyPopupMenuItem = new MyPopupMenuItem("自动播报");
         let items = [
             _MyPopupMenuItem,
-            new PopupMenu.PopupMenuItem("新手指南"),
-            new PopupMenu.PopupMenuItem("登出")
+            new PopupMenu.PopupMenuItem("新手指南")
+            // new PopupMenu.PopupMenuItem("登出")
         ];
 
         for (let item of items) {
@@ -357,7 +359,7 @@ class Main extends Page {
         this.mChatLV.id = "chatlv";
         this.mChatLV.width = width - this.mContactLV.width;
         this.mChatLV.height = height - 60;
-        this.mChatLV.height -= 120;
+        // this.mChatLV.height -= 120;
         this.mChatLV.dividerHeight = 20;
         this.mChatLV.page = this;
         this.mChatLV.on("itemselect", this.onChatLvSelect);
@@ -401,7 +403,7 @@ class Main extends Page {
         // log.D(TAG, "start!!");
         let popupCompositeView = new PopupCompositeView();
         popupCompositeView.width = this.mChatLV.width;
-        popupCompositeView.height = 240;
+        popupCompositeView.height = width*3/(4*20)*5;
         // popupCompositeView.addChild(faceView);
         var rl = new RelativeLayout();
         rl.setLayoutParam(0, "align", {
@@ -470,7 +472,7 @@ class Main extends Page {
 
         let emojiBtn = new Button();
         emojiBtn.sizeType = Button.SizeType.Small;
-        emojiBtn.buttonColor = "rgba(123,127,141,0.6)";
+        emojiBtn.buttonColor = "rgba(123,127,141,0.5)";
         emojiBtn.text = "表情";
         emojiBtn.height = this.inputView.height;
         emojiBtn.width = this.inputView.width / 2;
@@ -511,9 +513,8 @@ class Main extends Page {
         });
         popupCompositeViewText.layout = rl;
 
-        this.defaultMsg = ["[微笑]", "[呲牙]", "[得意]", "[调皮]", "请发送位置,我马上到.", "你好.", "老地方见", "好的，我知道了.",
-            "我正在開車呢，稍後給您回電話.", "^_^我正在路上."
-        ];
+        this.defaultMsg = ["请发送位置,我马上到.","你好.","老地方见", "好的，我知道了.",
+         "我正在開車呢，稍後給您回電話.","^_^我正在路上.","我马上到南方大楼","我正在回家的路上","在接你的路上，请稍等","(╯‵□′)╯︵┴─┴"];
         let TextAdapter = new TextGridAdapter();
         TextAdapter.data = this.defaultMsg;
         let TextGridView = new GridView();
@@ -536,7 +537,7 @@ class Main extends Page {
 
         let textInputBtn = new Button();
         textInputBtn.sizeType = Button.SizeType.Small;
-        textInputBtn.buttonColor = "rgba(123,127,141,0.6)";
+        textInputBtn.buttonColor = "rgba(123,127,141,0.5)";
         textInputBtn.height = this.inputView.height;
         textInputBtn.width = this.inputView.width / 2;
         textInputBtn.text = "默认输入";
@@ -633,6 +634,10 @@ class Main extends Page {
         if (this.currentItem) {
             this.currentItem.background = "#F2F2F2";
         }
+
+        // log.D(TAG, "-------------onContactLvSelect------------- position = " + position);
+        // log.D(TAG, this.ContactsList);
+
         this.page.contactNameTV.text = this.ContactsList[position].Name;
         itemView.background = "#d3d3d3";
         this.page.ChatWithUserName = this.ContactsList[position].UserName;
@@ -644,6 +649,7 @@ class Main extends Page {
         this.page.mContactAdapter.data = this.page.mContactLV.ContactsList;
         this.page.mContactAdapter.onDataChange();
         if (this.page.inputView.visibility !== View.Visibility.Visible) {
+            this.page.mChatLV.height -= 120;
             this.page.inputView.visibility = View.Visibility.Visible;
         }
     }
@@ -763,12 +769,21 @@ class Main extends Page {
                 break;
             }
         }
+
         if (index) {
             let _contact = this.mContactLV.ContactsList.splice(index, 1);
             if (pIsReceive) _contact[0].hasNewMsg = true;
             this.mContactLV.ContactsList.unshift(_contact[0]);
             this.mContactAdapter.data = this.mContactLV.ContactsList;
             this.mContactAdapter.onDataChange();
+        } else {
+            // this.mWxModule.getMemberFromDB(WithUserName).then((ret) => {
+            //     log.I(TAG, ret);
+            //     if (pIsReceive) ret.hasNewMsg = true;
+            //     this.mContactLV.ContactsList.unshift(ret);
+            //     this.mContactAdapter.data = this.mContactLV.ContactsList;
+            //     this.mContactAdapter.onDataChange();
+            // });
         }
     }
 
@@ -789,7 +804,7 @@ class Main extends Page {
         for (var i = 0; i < (self.chatAdapter.getCount() - 1); i++) {
             // log.D(TAG, this.mChatLV.obtainView(i));
             let itemView = self.mChatLV.getChildAt(i);
-            if (itemView.msgInfo) {
+            if (itemView && itemView.msgInfo) {
                 log.D(TAG, "MsgId = " + itemView.msgInfo.MsgId + " playingMsgId = " + self.chatAdapter.playingMsgId);
                 if (itemView.msgInfo.MsgId == self.chatAdapter.playingMsgId) {
                     log.D(TAG, "do stop.");
@@ -810,21 +825,6 @@ class Main extends Page {
             this.chatAdapter.data = this.getMsgList(ret);
             this.chatAdapter.onDataChange();
             this.mChatLV.arriveAt(this.chatAdapter.getCount() - 1);
-
-            // log.D(TAG, "this.chatAdapter.getCount() = " + this.chatAdapter.getCount());
-            // if (this.chatAdapter.getCount() >= 2) {
-            //     log.D(TAG, "go get lastChild.");
-            //     var itemView = this.mChatLV.obtainView(this.chatAdapter.getCount() - 2);
-            //     log.D(TAG, "itemView.animationView = " + itemView.animationView);
-            //     if (itemView.animationView) {
-            //         if(self.sMediaPlayer) {
-            //             // this.voiseBroadcastList.push();
-            //         } else {
-            //             self.doVoiceMsgPlay(itemView);
-            //         }
-            //     }
-            // }
-            // self.startVoiceAnimation();
         });
     }
 
