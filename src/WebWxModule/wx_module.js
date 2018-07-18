@@ -539,16 +539,21 @@ class WxModule extends EventEmitter {
         }
 
         const { data } = result;
-        /*
+        /**/
         if (data.ModContactCount != 0) {
-            log.D(TAG, "-----------------ModContactList-------------------");
-            log.D(TAG, data.ModContactList[0]);
             if (data.ModContactList[0].UserName.includes('@@')) {
                 let group = this.copyObj(data.ModContactList[0]);
+                log.D(TAG, "-----------------_groupName-------------------");
+                log.I(TAG, group);
                 this.mWxDao.Groups.insert(group);
+            } else if (data.ModContactList[0].UserName.includes('@')){
+                let member = this.copyObj(data.ModContactList[0]);
+                log.D(TAG, "-----------------member-------------------");
+                log.I(TAG, member);
+                this.mWxDao.Members.insert(member);
             }
         }
-        */
+
         this.syncKey = data.SyncKey;
         this.formateSyncKey = this.syncKey.List.map((item) => item.Key + '_' + item.Val).join('|');
         data.AddMsgList.forEach((msg) => this.handleMsg(msg));
@@ -1215,17 +1220,17 @@ class WxModule extends EventEmitter {
         } else {
             member = await this.getMember(pUserName);
         }
-
-
+        // log.D(TAG, "------------MemberList----------- 000000");
+        // log.D(TAG, member);
         let contact = null;
-        if (member != null) {
+        if (member !== null) {
             contact = new Contact();
             contact.setUserName(member.UserName);
-            if (member.RemarkName !== '') {
+            if (member.RemarkName !== undefined && member.RemarkName !== null && member.RemarkName !== '') {
                 contact.setName(member.RemarkName);
             } else if (member.NickName !== '') {
                 contact.setName(member.NickName);
-            } else if (startsWith(_chatArr[i], "@@")) {
+            } else if (startsWith(pUserName, "@@")) {
                 // log.I(TAG, member);
                 var _groupName = "";
                 for (var j = 0; j < member.MemberCount; j++) {

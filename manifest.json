@@ -2,7 +2,7 @@
     "domain": {
         "name": "LanyouWx.yunos.com",
         "use_sdk": 1,
-        "version_code": 1,
+        "version_code": 1.9,
         "version": "1",
         "default_locale": "zh-CN",
         "permission": {
