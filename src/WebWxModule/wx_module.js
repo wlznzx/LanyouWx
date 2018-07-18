@@ -539,6 +539,16 @@ class WxModule extends EventEmitter {
         }
 
         const { data } = result;
+        /*
+        if (data.ModContactCount != 0) {
+            log.D(TAG, "-----------------ModContactList-------------------");
+            log.D(TAG, data.ModContactList[0]);
+            if (data.ModContactList[0].UserName.includes('@@')) {
+                let group = this.copyObj(data.ModContactList[0]);
+                this.mWxDao.Groups.insert(group);
+            }
+        }
+        */
         this.syncKey = data.SyncKey;
         this.formateSyncKey = this.syncKey.List.map((item) => item.Key + '_' + item.Val).join('|');
         data.AddMsgList.forEach((msg) => this.handleMsg(msg));
@@ -547,16 +557,19 @@ class WxModule extends EventEmitter {
     async handleMsg(msg) {
         // log.I(TAG, "-----------------msg-------------------");
         // log.I(TAG, msg);
+        if (msg.MsgType == 10000) {
+            return;
+        }
 
         if (msg.FromUserName.includes('@@')) {
             log.I(TAG, "----------------- Group Msg -------------------");
             log.I(TAG, msg);
-            try{
+            try {
                 const userId = msg.Content.match(/^(@[a-zA-Z0-9]+|[a-zA-Z0-9_-]+):<br\/>/)[1];
                 msg.GroupMember = await this.getGroupMember(userId, msg.FromUserName);
                 msg.Group = await this.getGroup(msg.FromUserName);
                 msg.Content = msg.Content.replace(/^(@[a-zA-Z0-9]+|[a-zA-Z0-9_-]+):<br\/>/, '');
-            }catch(e) {
+            } catch (e) {
                 log.I(TAG, 'group msg', e);
             }
 
@@ -579,7 +592,7 @@ class WxModule extends EventEmitter {
                 msg.Content = "语音.";
             }
             // this.msgInsert({ MsgId: msg.MsgId, WithUserName: msg.FromUserName, IsReceive: true, MsgType: msg.MsgType, Content: msg.Content, CreateTime: msg.CreateTime, IsGroup: true, GroupMember: msg.GroupMember, Url: msg.Url, ImgUrl: img_url, VoiceLength: msg.VoiceLength });
-            this.msgInsert({ MsgId: msg.MsgId, WithUserName: msg.FromUserName, IsReceive: true, MsgType: msg.MsgType, Content: msg.Content, CreateTime: 12351235, IsGroup: true, GroupMember: msg.GroupMember ,Url: msg.Url,VoiceLength: msg.VoiceLength});
+            this.msgInsert({ MsgId: msg.MsgId, WithUserName: msg.FromUserName, IsReceive: true, MsgType: msg.MsgType, Content: msg.Content, CreateTime: 12351235, IsGroup: true, GroupMember: msg.GroupMember, Url: msg.Url, VoiceLength: msg.VoiceLength });
             // this.msgInsert({ MsgId: msg.MsgId, WithUserName: msg.FromUserName, IsReceive: true, MsgType: msg.MsgType, Content: msg.Content, CreateTime: msg.CreateTime, IsGroup: true, GroupMember: msg.GroupMember, Url: msg.Url, ImgUrl: img_url, VoiceLength: msg.VoiceLength });
             this.emit("group", msg);
             return;
@@ -1007,8 +1020,8 @@ class WxModule extends EventEmitter {
             }
         }).then((result) => {
             const { data } = result;
- //           log.D(TAG, "------------------getMsgImg-------------------");
- //           log.D(TAG, result);
+            //           log.D(TAG, "------------------getMsgImg-------------------");
+            //           log.D(TAG, result);
             callback = callback || (() => (null));
             let path = APPCATION_PATH + "_" + uniqueID + ".jpg";
             fs.writeFile(path, data, "binary", function (err) {

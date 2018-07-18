@@ -781,7 +781,7 @@ class Main extends Page {
     // 更新....
     refreshContactPart(WithUserName, pIsReceive) {
         if (!this.isLopped) return;
-        // log.I(TAG, "-----------------refreshContactPart--------------------- WithUserName = " + WithUserName);
+        log.I(TAG, "-----------------refreshContactPart--------------------- WithUserName = " + WithUserName);
         let index;
         for (let i = 0; i < this.mContactLV.ContactsList.length; i++) {
             // log.I(TAG, "UserName = " + this.mContactLV.ContactsList[i].UserName + " Name = " + this.mContactLV.ContactsList[i].Name);
@@ -790,7 +790,7 @@ class Main extends Page {
                 break;
             }
         }
-        // log.I(TAG, "-----------------refreshContactPart--------------------- index = " + index);
+        log.I(TAG, "-----------------refreshContactPart--------------------- index = " + index);
         if (index !== undefined) {
             let _contact = this.mContactLV.ContactsList.splice(index, 1);
             if (pIsReceive) _contact[0].hasNewMsg = true;
